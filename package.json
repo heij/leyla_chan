@@ -1,0 +1,21 @@
+{
+  "name": "leyla_chan",
+  "version": "1.0.0",
+  "description": "",
+  "main": "node app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "engines": { "node": "8.9.4" },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.6.1",
+    "bitly": "^6.0.6",
+    "discord.js": "^11.3.2",
+    "isgd": "^1.1.3",
+    "kitsu": "^5.2.0",
+    "nyaapi": "^2.0.5"
+  }
+}
