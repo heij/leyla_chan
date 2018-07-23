@@ -11,7 +11,7 @@ const languages = require('../languages');
 const qualities = require('../qualities');
 
 const control = [];
-for (i=1; i<=10;i++) {
+for (let i=1; i<=10;i++) {
 	control.push(i)
 };
 
