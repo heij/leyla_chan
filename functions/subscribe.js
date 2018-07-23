@@ -92,8 +92,10 @@ module.exports.sub = function(Discord, client, message, args) {
 	var animeProvider = checkProviders(message, args);
 	if (typeof animeProvider == 'undefined') { return; };
 
-	var animeEpisode = treatEpisodeNumber(checkEpisode(message, args));
-	if (typeof animeEpisode == 'undefined') { return; };
+	var animeEpisode = checkEpisode(message, args);
+	if (typeof animeEpisode != 'undefined') { 
+		animeEpisode = treatEpisodeNumber(animeEpisode) 
+	}
 
 	var animeQuality = checkQuality(message, animeProvider, args);
 	if (typeof animeQuality == 'undefined') { return; };
@@ -214,6 +216,10 @@ function sendSubscriptions(client) {
 				}
 			})
 		}
+
+		if (usersLen == 0) {
+			resolve();
+		}
 		prepareSubscription(counter);
 	})
 }
@@ -264,6 +270,7 @@ function sendEmbed(user, client) {
 
 function cycleAnime(user) {
 	return new Promise((resolve, reject) => {
+    
 		var animeCount = Object.keys(subscriptions[user]).length;
 		var userPromises = [];
 
