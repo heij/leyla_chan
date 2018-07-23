@@ -195,7 +195,7 @@ module.exports.watchSubscriptions = function watchSubscriptions(Discord, client)
 			}
 		});
 	});
-  	setTimeout(watchSubscriptions.bind(null, Discord, client), 30000);
+  	setTimeout(watchSubscriptions.bind(null, Discord, client), 180000);
 }
 
 function sendSubscriptions(client) {

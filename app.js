@@ -23,10 +23,10 @@ const subscription = require("./functions/subscribe");
 const utils = require("./functions/utils");
 
 client.on("ready", () => {
-  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`); 
+  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
   
   //180000
-  //setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
+  setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
@@ -41,7 +41,7 @@ client.on("message", async message => {
   if(message.content.indexOf(prefix) !== 0) return;
 
   // args = ["Is", "this", "the", "real", "life?"]
-  const args = message.content.slice(prefix).trim().split(/ +/g);
+  const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
   switch(command) {
