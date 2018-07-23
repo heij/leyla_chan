@@ -16,7 +16,8 @@ setInterval(() => {
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
-const config = require("./config.json");
+const prefix = process.env.PREFIX;
+const token = process.env.TOKEN;
 const nyaa = require("./functions/search");
 const subscription = require("./functions/subscribe");
 const utils = require("./functions/utils");
@@ -37,10 +38,10 @@ client.on("message", async message => {
   
   // Also good practice to ignore any message that does not start with our prefix, 
   // which is set in the configuration file.ff
-  if(message.content.indexOf(config.prefix) !== 0) return;
+  if(message.content.indexOf(prefix) !== 0) return;
 
   // args = ["Is", "this", "the", "real", "life?"]
-  const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+  const args = message.content.slice(prefix).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
   switch(command) {
@@ -72,4 +73,4 @@ client.on("message", async message => {
 });
 
 
-client.login(config.token);
+client.login(token);
