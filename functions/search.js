@@ -81,7 +81,7 @@ function checkQuality(message, animeProvider, args) {
 		args[propertyIndex+1] = '';
   	}
   	if (animeQuality) { return animeQuality }
-	else { return '' }  	
+	else { return ''; }  	
 }
 
 function checkLanguage(message, args) {
@@ -103,6 +103,8 @@ function checkLanguage(message, args) {
 
 module.exports.search = function(Discord, client, message, args) {
 	var animeProvider = checkProviders(message, args);
+	
+	// If the specified fansub exists, check if the specified quality (if any) is valid within the fansub
 	if (typeof animeProvider == 'undefined') { return; }
 	else if (animeProvider) { 
 		animeProvider = animeProvider.name;
@@ -111,15 +113,19 @@ module.exports.search = function(Discord, client, message, args) {
 	}
 	
 	var animeLanguage = checkLanguage(message, args);
-    const query = args.join(" ").trim();
+    var query = args.join(" ").trim();
 
     //message.delete().catch(O_o=>{console.log(O_o)}); 
 	message.channel.send('Entendido, capitão! Leyla-chan partindo em busca dos seus torrents!');
 	
+	if (typeof animeQuality != 'undefined') {
+		query = query + ' ' + animeQuality;
+	}
+
 	if (animeProvider != null) {
 	    si.searchByUser({
 	    	user: animeProvider,
-	    	term: query + ' ' + animeQuality,
+	    	term: query,
 	    	category: animeLanguage || '1_0'
 		}).then(result => {
 			if (result.length == 0) {
@@ -132,7 +138,7 @@ module.exports.search = function(Discord, client, message, args) {
 
 	} else {
 	    si.search({
-	    	term: query + ' ' + animeQuality,
+	    	term: query,
 	    	category: animeLanguage || '1_0'
 		}).then(result => {
 			if (result.length == 0) {
@@ -146,6 +152,7 @@ module.exports.search = function(Discord, client, message, args) {
 }
 
 module.exports.batch = function(Discord, client, message, args) {
+	// Checks for required parameters (fansub and episodes)
 	if (!(args.includes('--p'))) {
 		message.channel.send('Você precisa especificar um fansub para poder usar esse comando; eu tenho uma lista dos fansubs disponíveis no comando __*\'help batch*__');
 		return;
@@ -163,10 +170,9 @@ module.exports.batch = function(Discord, client, message, args) {
 	var animeQuality = checkQuality(message, animeProvider, args);
 	if (typeof animeQuality == 'undefined') { return; };
 
-	//var animeLanguage = checkLanguage(message, args);
-
     const query = args.join(" ").trim();
 
+    // Format an array containing the episodes within the specified range
     if (!(isNaN(animeRange[1]))) {
 	    var episodesInRange = [];
 	    var counter = 0;
@@ -200,16 +206,17 @@ module.exports.batch = function(Discord, client, message, args) {
 
 function returnMagnet(Discord, client, message, result) {
 	let queryResult = [];
-	let totalPagesResult = Math.ceil(result.length/10);
-	let counter = 1;
+	let totalPageCount = Math.ceil(result.length/10);
 	let currentPage = 1;
 	let control = [];
 
+	// Divide the results in separate pages
+	let counter = 1;
 	result.forEach(entry => {
 		let page = Math.ceil(counter/10);
 		if (!(page in queryResult)) {
 			queryResult[page] = [{
-				name: 'Pagina ' + page + '/' + totalPagesResult,
+				name: 'Pagina ' + page + '/' + totalPageCount,
 				value: '\u200b'
 			}]
 		}
@@ -222,18 +229,13 @@ function returnMagnet(Discord, client, message, result) {
 		counter += 1;
 	});
 
-	/*queryResult.push({
-		name: '< - Anterior',
-		value: '\u200b'		
-	},
-	{
-		name: '> - Prox',
-		value: '\u200b'		
-	},
-	{
-		name: 'c - Cancelar',
-		value: '\u200b'		
-	})*/
+	/*queryResult.forEach(entry => {
+		entry.push({
+			name: '\u200b',
+			value: '```Psiu, você também pode navegar enviando os caracteres (<, >, c)```'		
+		})
+	});*/
+
 	message.channel.send({
 			embed: {
 			    color: 0x731399,
@@ -247,6 +249,8 @@ function returnMagnet(Discord, client, message, result) {
 			    },
 			}
 	}).then(async (sentEmbed) => {
+		// Collect and process requests to change the current page or cancel the search; also, automatically cancel the search after some time 
+		// has passed without any user interaction
 		editEmbed(sentEmbed);
 		await sentEmbed.react("◀");
 		await sentEmbed.react("▶");
@@ -256,7 +260,7 @@ function returnMagnet(Discord, client, message, result) {
 	    const choiceCollector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id);
 		let picked = false;
 
-		var maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 30000);
+		var maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 
 		reactMenu.on("collect", reaction => {
 		    const chosen = reaction.emoji.name;
@@ -266,14 +270,14 @@ function returnMagnet(Discord, client, message, result) {
 		    	if (currentPage - 1 >= 1) {
 		    		currentPage--;
 		    		clearInterval(maxTime);
-		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 30000);
+		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 		    		editEmbed(sentEmbed)
 	    		}
 		    } else if (chosen === "▶") {
-		    	if (currentPage + 1 <= totalPagesResult) {
+		    	if (currentPage + 1 <= totalPageCount) {
 		    		currentPage++;
 		    		clearInterval(maxTime);
-		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 30000);
+		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 		    		editEmbed(sentEmbed)
 	    		}
 		    } else {
@@ -312,14 +316,14 @@ function returnMagnet(Discord, client, message, result) {
 			    	if (currentPage - 1 >= 1) {
 			    		currentPage--;
 			    		clearInterval(maxTime);
-			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 30000);
+			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 			    		editEmbed(sentEmbed)
 		    		}
 	            } else if(message.content == '>') {
-			    	if (currentPage + 1 <= totalPagesResult) {
+			    	if (currentPage + 1 <= totalPageCount) {
 			    		currentPage++;
 			    		clearInterval(maxTime);
-			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 30000);
+			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 			    		editEmbed(sentEmbed)
 		    		}
 	            } else {

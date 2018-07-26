@@ -1,5 +1,5 @@
 // glitch.me config
-const http = require('http');
+/*const http = require('http');
 const express = require('express');
 const app = express();
 app.get("/", (request, response) => {
@@ -9,10 +9,11 @@ app.get("/", (request, response) => {
 app.listen(process.env.PORT);
 setInterval(() => {
   http.get(`http://${process.env.PROJECT_DOMAIN}.glitch.me/`);
-}, 280000);
+}, 280000);*/
 
 const Discord = require("discord.js");
 const client = new Discord.Client();
+require('dotenv').config()
 
 const prefix = process.env.PREFIX;
 const token = process.env.TOKEN;
@@ -25,6 +26,7 @@ client.on("ready", () => {
   
   //180000
   setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
+  setTimeout(subscription.updateCurrentlyReleasing, 1000);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
@@ -35,7 +37,7 @@ client.on("message", async message => {
   if(message.author.bot) return;
   
   // Also good practice to ignore any message that does not start with our prefix, 
-  // which is set in the configuration file.ff
+  // which is set in the configuration file.
   if(message.content.indexOf(prefix) !== 0) return;
 
   // args = ["Is", "this", "the", "real", "life?"]
@@ -46,28 +48,27 @@ client.on("message", async message => {
   	case 'search':
   		nyaa.search(Discord, client, message, args);
   		break;
-	case 'batch':
-		nyaa.batch(Discord, client, message, args);
-		break;
-	case 'sub':
-	  	subscription.sub(Discord, client, message, args);
-	  	break;
-	case 'unsub':
-  		subscription.unsub(Discord, client, message, args);
+  	case 'batch':
+  		nyaa.batch(Discord, client, message, args);
   		break;
-	case 'list':
-		subscription.list(Discord, client, message, args);
-		break;
-	case 'help':
-		utils.help(Discord, client, message, args);
-		break;
-	case 'airing':
-		subscription.getAiring(Discord, client, message, args);
-		break;
-	default:
-		message.channel.send('Eu não conheço esse comando; use \'help para ver que comandos eu conheço.');	
+  	case 'sub':
+  	  	subscription.sub(Discord, client, message, args);
+  	  	break;
+  	case 'unsub':
+    		subscription.unsub(Discord, client, message, args);
+    		break;
+  	case 'list':
+  		subscription.list(Discord, client, message, args);
+  		break;
+  	case 'help':
+  		utils.help(Discord, client, message, args);
+  		break;
+  	case 'current':
+  		subscription.showCurrentlyReleasing(Discord, client, message, args);
+  		break;
+  	default:
+  		message.channel.send('Eu não conheço esse comando; use \'help para ver que comandos eu conheço.');
   }
-
 });
 
 

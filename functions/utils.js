@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const providers = require('../providers');
 const languages = require('../languages');
@@ -16,7 +17,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: '\'search *__anime__* --p *__fansub__* --l *__linguagem__* \n \u200b'
+			    	value: process.env.PREFIX + 'search *__anime__* --p *__fansub__* --l *__linguagem__* \n \u200b'
 			    },
 				currentProviders,
 				{
@@ -41,7 +42,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    },				    
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: '\'batch *__anime__* --p *__fansub__* --q *__qualidade__* --e *__episódio incial__*~*__episódio final__*\n \u200b'
+			    	value: process.env.PREFIX + 'batch *__anime__* --p *__fansub__* --q *__qualidade__* --e *__episódio incial__*~*__episódio final__*\n \u200b'
 			    },
 				currentProviders,
 				currentQualities
@@ -60,17 +61,30 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: '\'sub *__anime__* --p *__fansub__* --l *__linguagem__* --q *__qualidade__* --e *__episódio atual__*\n \u200b'
+			    	value: process.env.PREFIX + 'sub *__anime__* --p *__fansub__* --q *__qualidade__*\n \u200b'
 			    },
 				currentProviders,
-				{
-					name: '**Linguagens disponíveis:**',
-					value: '*__ing__* : Inglês\n*__jap__* : Japonês\n*__ni__* : Outras (Português, Espanhol, Alemão, etc) \n \u200b'
-				},
 				currentQualities
 				]
 		  	}
 		})		
+	} else if (args.includes('current')) {
+		let currentProviders = formatProviders();
+		message.channel.send({
+			embed: {
+			    color: 0x731399,
+			    fields: [{
+			    	name: 'Então você quer saber sobre o __current__? Vamos lá!',
+			    	value: 'Com este comando, você pode descobrir quais animes estão sendo lançados atualmente pela fansub que você escolheu! \n \u200b'
+			    }, 
+			    {
+			    	name: '**__Usagem:__** ',
+			    	value: process.env.PREFIX + 'current --p *__fansub__*'
+			    },
+			    currentProviders
+			    ]
+		  	}
+		})
 	} else if (args.includes('unsub')) {
 		message.channel.send({
 			embed: {
@@ -81,10 +95,10 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: '\'unsub *__anime__*'
+			    	value: process.env.PREFIX + 'unsub *__anime__*'
 			    }]
 		  	}
-		})	
+		})
 	} else if (args.includes('list')) {
 		message.channel.send({
 			embed: {
@@ -95,7 +109,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: '\'list'
+			    	value: process.env.PREFIX + 'list'
 			    }]
 		  	}
 		})	
@@ -109,7 +123,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    color: 0x731399,
 			    fields: [{
 			    	name: '\u200b',
-			    	value: 'Certo, então você quer saber como me usar? Pervertido! Hehe, brincadeira 😜. Bom, aqui vão os comandos que eu conheço até agora; use __**\'help comando**__ para saber mais sobre ele! Ah, e lembre-se sempre de usar o prefixo **\'** quando for conversar comigo! \n \u200b'
+			    	value: 'Certo, então você quer saber como me usar? Pervertido! Hehe, brincadeira 😜. Bom, aqui vão os comandos que eu conheço até agora; use __**' + process.env.PREFIX + 'help comando**__ para saber mais sobre ele! Ah, e lembre-se sempre de usar o prefixo **' + process.env.PREFIX + '** quando for conversar comigo! \n \u200b'
 			    }, 
 			    {
 			    	name: '__search__',
@@ -124,6 +138,11 @@ module.exports.help = function(Discord, client, message, args) {
 					value: 'E se você recebesse seus animes favoritos direto no seu inbox, assim que eles fossem lançados? E se eu te dissesse que eu posso tornar isso realidade?\n \u200b'
 				},
 				{
+					name: '__current__',
+					value: 'Um ótimo comando para saber quais animes estão sendo lançados atualmente pela sua fansub favorita!\n \u200b'
+
+				},
+				{
 					name: '__unsub__',
 					value: 'E se você deixasse de receber seus animes favoritos direto no seu inbox? E se eu te dissesse que eu também posso tornar isso realidade?\n \u200b'
 				},
@@ -136,9 +155,7 @@ module.exports.help = function(Discord, client, message, args) {
 	}
 }
 
-module.exports.addsub = function(Discord, client, message, args) {
-
-
+/*module.exports.addsub = function(Discord, client, message, args) {
 	fs.writeFile(path.join(__dirname, '../', 'providers.js'), JSON.stringify(providers), 'utf8', (err) => {
 		if (err) {
 			console.log(err)
@@ -148,7 +165,7 @@ module.exports.addsub = function(Discord, client, message, args) {
 			message.channel.send('Pronto! Terminei de configurar sua fansub; agora você pode procurar pelos torrents do seu fansub favorito!');
 		}
 	});
-}
+}*/
 
 function formatProviders() {
 	let entries = Object.entries(providers);
