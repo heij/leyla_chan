@@ -211,8 +211,8 @@ module.exports.list = function(Discord, client, message, args) {
 }
 
 module.exports.watchSubscriptions = function watchSubscriptions(Discord, client) {
-  	console.log('Checando inscrições!');
-  	updateCurrentlyReleasing.then(() => {
+  	console.log('Checando inscrições!'); 
+  	updateCurrentlyReleasing().then(() => {
 		sendSubscriptions(client).then(() => {
 	    	console.log('Loop concluído!');
 			fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
@@ -261,10 +261,6 @@ function cycleUser(client, counter, user) {
 function sendEmbed(user, client) {
 	return new Promise((resolve, reject) => {
 		var userAnimes = [];
-		userAnimes.push([{
-			name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
-			value: '\u200b'
-		}]);
 
 		cycleAnime(user).then((userPromises) => {
 	        Promise.all(userPromises).then((values) => {
@@ -278,6 +274,10 @@ function sendEmbed(user, client) {
 
 	        	if (userAnimes.length > 1) {
         			var embedFields = [];
+              embedFields.push([{
+                name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
+                value: '\u200b'
+              }]);
 
         			userAnimes.forEach((entry, index) => {
         				let embedPosition = Math.floor(index / 10);
@@ -561,10 +561,11 @@ function formatCurrentlyReleasing(embedField, fansubEntries) {
 }
 
 function updateCurrentlyReleasing() {
-	return new Promise(() => {
+	return new Promise((resolve, reject) => {
 		_updateCurrentlyReleasing().then(() => {
+      console.log('Updated fansub anime list');
 			resolve()
-		});		
+		})		
 	})
 
 }
