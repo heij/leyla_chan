@@ -26,7 +26,6 @@ client.on("ready", () => {
 
   //180000
   setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
-  setTimeout(subscription.updateCurrentlyReleasing, 1000);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
