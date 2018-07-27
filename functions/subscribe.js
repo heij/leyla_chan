@@ -211,17 +211,19 @@ module.exports.list = function(Discord, client, message, args) {
 }
 
 module.exports.watchSubscriptions = function watchSubscriptions(Discord, client) {
-  	console.log('Checando inscrições!');
-	sendSubscriptions(client).then(() => {
-    	console.log('Loop concluído!');
-		fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
-			if (err) {
-				console.log(err)
-				return;
-			}
+  	console.log('Checando inscrições!'); 
+  	updateCurrentlyReleasing().then(() => {
+		sendSubscriptions(client).then(() => {
+	    	console.log('Loop concluído!');
+			fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
+				if (err) {
+					console.log(err)
+					return;
+				}
+			});
 		});
-	});
-  	setTimeout(watchSubscriptions.bind(null, Discord, client), 1800000);
+	  	setTimeout(watchSubscriptions.bind(null, Discord, client), 1800000);
+  	})
 }
 
 function sendSubscriptions(client) {
@@ -259,10 +261,6 @@ function cycleUser(client, counter, user) {
 function sendEmbed(user, client) {
 	return new Promise((resolve, reject) => {
 		var userAnimes = [];
-		userAnimes.push([{
-			name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
-			value: '\u200b'
-		}]);
 
 		cycleAnime(user).then((userPromises) => {
 	        Promise.all(userPromises).then((values) => {
@@ -275,7 +273,11 @@ function sendEmbed(user, client) {
 	        	});
 
 	        	if (userAnimes.length > 1) {
-        			embedFields = [];
+        			var embedFields = [];
+              embedFields.push([{
+                name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
+                value: '\u200b'
+              }]);
 
         			userAnimes.forEach((entry, index) => {
         				let embedPosition = Math.floor(index / 10);
@@ -558,13 +560,14 @@ function formatCurrentlyReleasing(embedField, fansubEntries) {
 	return embedField;
 }
 
-module.exports.updateCurrentlyReleasing = function updateCurrentlyReleasing() {
-	_updateCurrentlyReleasing().then(() => {
-		console.log('Done updating!')
-	});
+function updateCurrentlyReleasing() {
+	return new Promise((resolve, reject) => {
+		_updateCurrentlyReleasing().then(() => {
+      console.log('Updated fansub anime list');
+			resolve()
+		})		
+	})
 
-	//86400000 24h
-	setTimeout(updateCurrentlyReleasing, 43200000);
 }
 
 function _updateCurrentlyReleasing() {

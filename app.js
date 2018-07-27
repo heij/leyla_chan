@@ -1,5 +1,5 @@
 // glitch.me config
-/*const http = require('http');
+const http = require('http');
 const express = require('express');
 const app = express();
 app.get("/", (request, response) => {
@@ -9,7 +9,7 @@ app.get("/", (request, response) => {
 app.listen(process.env.PORT);
 setInterval(() => {
   http.get(`http://${process.env.PROJECT_DOMAIN}.glitch.me/`);
-}, 280000);*/
+}, 280000);
 
 const Discord = require("discord.js");
 const client = new Discord.Client();
@@ -23,10 +23,9 @@ const utils = require("./functions/utils");
 
 client.on("ready", () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
-  
+
   //180000
   setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
-  setTimeout(subscription.updateCurrentlyReleasing, 1000);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
