@@ -259,10 +259,10 @@ function cycleUser(client, counter, user) {
 function sendEmbed(user, client) {
 	return new Promise((resolve, reject) => {
 		var userAnimes = [];
-		userAnimes.push({
+		userAnimes.push([{
 			name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
 			value: '\u200b'
-		});
+		}]);
 
 		cycleAnime(user).then((userPromises) => {
 	        Promise.all(userPromises).then((values) => {
@@ -273,13 +273,28 @@ function sendEmbed(user, client) {
 		        		}
 	        		})
 	        	});
+
 	        	if (userAnimes.length > 1) {
-					client.users.get(user).send({
-						embed: {
-						    color: 0x731399,
-						    fields: userAnimes
-					  	}
-					})
+        			embedFields = [];
+
+        			userAnimes.forEach((entry, index) => {
+        				let embedPosition = Math.floor(index / 10);
+
+        				if (typeof embedFields[embedPosition] === 'undefined') {
+        					embedFields[embedPosition] = [];
+        				}
+    					embedFields[embedPosition].push(entry)
+        			})
+
+        			embedFields.forEach((entry) => {
+						client.users.get(user).send({
+							embed: {
+							    color: 0x731399,
+							    fields: entry
+						  	}
+						})
+        			})
+
 					resolve();
 				} else {
 					resolve();
