@@ -15,7 +15,7 @@ for (let i=1; i<=10;i++) {
 	control.push(i)
 };
 
-function checkProviders(message, args) {
+function checkProvider(message, args) {
   	if (args.includes('--p')) {
   		let propertyIndex = args.indexOf('--p');
 
@@ -23,36 +23,51 @@ function checkProviders(message, args) {
   			message.channel.send('Não consegui encontrar o fansub que você escolheu... Tem certeza de que você digitou um fansub existente?');
   			return;
 		} else {
-			var animeProvider = providers[args[propertyIndex+1]];
+		  	var animeProvider = {
+		  		key: args[propertyIndex+1],
+		  		info: providers[args[propertyIndex+1]]
+		  	}
 		}
 		args[propertyIndex] = '';
 		args[propertyIndex+1] = '';
+  	} else {
+  		message.channel.send('Você precisa especificar um fansub para poder usar esse comando!');
   	}
 
-  	if (animeProvider) { return animeProvider }
-	else { return null }
+  	if (animeProvider) { return animeProvider; }
+	else { return null; }
 }
 
 function checkEpisode(message, args) {
 	if (args.includes('--e')) {
-  		let propertyIndex = args.indexOf('--e');		
+  		let propertyIndex = args.indexOf('--e');
+
+  		// Throw an error if the inputted episode is not a number
 		if (isNaN(args[propertyIndex+1])) {
 			message.channel.send('Hmmm, isso não parece ser um número de episódio válido... Dê uma olhada nisso e tente novamente, ok?');
 			return;
-		} else {
-			var animeEpisode = args[propertyIndex+1];
 		}
+
+		var episodeInt = parseInt(args[propertyIndex+1]);
+		var episodeRange = [];
+
+		while (episodeInt > 0) {
+			episodeRange.push(treatEpisodeNumber(episodeInt))
+			episodeInt--;
+		}
+
 		args[propertyIndex] = '';
 		args[propertyIndex+1] = '';
 	}
-  	return animeEpisode;
+  	if (episodeRange) { return episodeRange; }
+	else { return null; }
 }
 
 function checkQuality(message, animeProvider, args) {
 	if(args.includes('--q')) {
   		let propertyIndex = args.indexOf('--q');
 
-  		if (animeProvider.qualityFormat == false) {
+  		if (animeProvider.info.qualityFormat == false) {
   			message.channel.send('A fansub especificada não marca seus torrents com a resolução do anime (provavelmente ela trabalha com uma única resolução), então vou ter que ignorar essa opção... Desculpe o inconveniente!');
 			args[propertyIndex] = '';
 			args[propertyIndex+1] = '';  			
@@ -69,6 +84,7 @@ function checkQuality(message, animeProvider, args) {
 		args[propertyIndex+1] = '';
   	}
   	if (animeQuality) { return animeQuality }
+  	else { return null; }
 }
 
 function checkLanguage(message, args) {
@@ -89,45 +105,52 @@ function checkLanguage(message, args) {
 }
 
 module.exports.sub = function(Discord, client, message, args) {
-	var animeProvider = checkProviders(message, args);
+	// Check for --p option (mandatory)
+	var animeProvider = checkProvider(message, args);
 	if (typeof animeProvider == 'undefined') { return; };
 
-	var animeEpisode = checkEpisode(message, args);
-	if (typeof animeEpisode != 'undefined') { 
-		animeEpisode = treatEpisodeNumber(animeEpisode) 
-	}
-
+	// Check for --q option
 	var animeQuality = checkQuality(message, animeProvider, args);
 	if (typeof animeQuality == 'undefined') { return; };
 
-	var animeLanguage = checkLanguage(message, args);
-	if (typeof animeLanguage == 'undefined') { return; }
+	// Check for --e option
+	/*var episodeRange = checkEpisode(message, args);
+	if (typeof episodeRange == 'undefined') { return; };*/
 
     const query = args.join(" ").trim();
 
+    // If the user has no subscriptions, register the user
     if (!(subscriptions.hasOwnProperty(message.author.id))) {
     	subscriptions[message.author.id] = {}
-    } else if (subscriptions[message.author.id].hasOwnProperty(query)) {
+    }
+
+    // If the user is already subscribed to the requested anime, return error
+    if (subscriptions[message.author.id].hasOwnProperty(query)) {
     	message.channel.send('Você já parece estar inscrito nesse anime, então basta esperar o próximo episódio ser lançado!');
     	return;
     }
 
-	subscriptions[message.author.id][query] = { 
-		provider: animeProvider.name || 'n/a',
-		language: animeLanguage || 'n/a',
-		quality: animeQuality || 'n/a',
-		episode: animeEpisode || '01'
-	}
-	
-	fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
-		if (err) {
-			console.log(err)
-			message.channel.send('Oh não... Aconteceu algo de ruim e eu não consegui realizar sua inscrição... Porque não tenta novamente mais tarde?');
-			return;
-		} else {
-			message.channel.send('Pronto! Agora é só esperar os seus animes favoritos direto no seu feed!');
+    // Check if the requested anime is being released by the selected fansub, and return an error if not.
+    if (providers[animeProvider.key].currentlyReleasing.includes(query)) {
+		subscriptions[message.author.id][query] = { 
+			provider: animeProvider.info.name,
+			quality: animeQuality || 'n/a',
+			episode: []
 		}
-	});
+		
+		fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
+			if (err) {
+				console.log(err)
+				message.channel.send('Oh não... Aconteceu algo de ruim e eu não consegui realizar sua inscrição... Porque não tenta novamente mais tarde?');
+				return;
+			} else {
+				message.channel.send('Pronto! Agora é só esperar os seus animes favoritos direto no seu feed!');
+			}
+		});
+    } else {
+    	message.channel.send('Hmmmmmm, não parece que a fansub que você escolheu está trabalhando nesse anime... Você pode ver uma lista de animes por fansub usando o comando *__current__*');
+    	return;
+    }
 }
 
 module.exports.unsub = function(Discord, client, message, args) {
@@ -169,9 +192,8 @@ module.exports.list = function(Discord, client, message, args) {
 	    		name: '➔ ' + encode_utf8(entry),
 	    		value: 
 	    		'```Fansub: ' + encode_utf8(subscriptions[message.author.id][entry]['provider']) + 
-	    		' | Linguagem: ' + encode_utf8(subscriptions[message.author.id][entry]['language']) +
-	    		' | Qualidade: ' + encode_utf8(subscriptions[message.author.id][entry]['quality']) +
-	    		' | Episódio atual: ' + encode_utf8(subscriptions[message.author.id][entry]['episode']) +
+	    		' | Qualidade: ' + encode_utf8(subscriptions[message.author.id][entry]['quality']) + /*+
+	    		' | Episódios enviados: ' + encode_utf8(subscriptions[message.author.id][entry]['episode']) +*/
 	    		'```'
 			});			
 		}
@@ -185,13 +207,13 @@ module.exports.list = function(Discord, client, message, args) {
 	    },	    
 	    fields: queryResultExhibit
 	  }
-	})	
+	})
 }
 
 module.exports.watchSubscriptions = function watchSubscriptions(Discord, client) {
-  console.log('Checando inscrições!');
+  	console.log('Checando inscrições!');
 	sendSubscriptions(client).then(() => {
-    console.log('Loop concluído!');
+    	console.log('Loop concluído!');
 		fs.writeFile(path.join(__dirname, '../subscriptions', 'userIndex.json'), JSON.stringify(subscriptions), 'utf8', (err) => {
 			if (err) {
 				console.log(err)
@@ -199,7 +221,7 @@ module.exports.watchSubscriptions = function watchSubscriptions(Discord, client)
 			}
 		});
 	});
-  setTimeout(watchSubscriptions.bind(null, Discord, client), 1800000);
+  	setTimeout(watchSubscriptions.bind(null, Discord, client), 1800000);
 }
 
 function sendSubscriptions(client) {
@@ -237,27 +259,42 @@ function cycleUser(client, counter, user) {
 function sendEmbed(user, client) {
 	return new Promise((resolve, reject) => {
 		var userAnimes = [];
-		userAnimes.push({
+		userAnimes.push([{
 			name: 'Oieee! Aqui é o delivery da Leyla-chan, trazendo pra você os animes mais fresquinhos da temporada!',
 			value: '\u200b'
-		});
+		}]);
 
 		cycleAnime(user).then((userPromises) => {
 	        Promise.all(userPromises).then((values) => {
 	        	values.forEach((entry) => {
-	        		if (entry != 'Nadie!') {
-		        		userAnimes.push(entry[0])
-	        		}
+	        		entry.forEach((subEntry) => {
+		        		if (subEntry != 'Nadie!') {
+			        		userAnimes.push(subEntry)
+		        		}
+	        		})
 	        	});
-        		/*console.log(user)
-	        	console.log(JSON.stringify(userAnimes) + '\n')*/
+
 	        	if (userAnimes.length > 1) {
-					client.users.get(user).send({
-						embed: {
-						    color: 0x731399,
-						    fields: userAnimes
-					  	}
-					})
+        			embedFields = [];
+
+        			userAnimes.forEach((entry, index) => {
+        				let embedPosition = Math.floor(index / 10);
+
+        				if (typeof embedFields[embedPosition] === 'undefined') {
+        					embedFields[embedPosition] = [];
+        				}
+    					embedFields[embedPosition].push(entry)
+        			})
+
+        			embedFields.forEach((entry) => {
+						client.users.get(user).send({
+							embed: {
+							    color: 0x731399,
+							    fields: entry
+						  	}
+						})
+        			})
+
 					resolve();
 				} else {
 					resolve();
@@ -272,7 +309,6 @@ function sendEmbed(user, client) {
 
 function cycleAnime(user) {
 	return new Promise((resolve, reject) => {
-    
 		var animeCount = Object.keys(subscriptions[user]).length;
 		var userPromises = [];
 
@@ -291,56 +327,56 @@ function searchAnime(user, anime) {
 	return new Promise((resolve, reject) => {
 		var quality = subscriptions[user][anime]['quality'] != 'n/a' ? subscriptions[user][anime]['quality'] : '';
 
-		if (subscriptions[user][anime]['provider'] == 'n/a') {
-		    si.search({
-		    	term: anime + ' ' + subscriptions[user][anime]['episode'] + ' ' + quality,
-		    	n: 1,
-		    	category: subscriptions[user][anime]['language'] != 'n/a' ? subscriptions[user][anime]['language'] : '1_0'
-			}).then(result => {
-				resolve(searchAnimeMagnet(result, subscriptions, user, anime));
-		    })
-		    .catch((err) => {
-		    	console.log('Failed, retrying!');
-		    	setTimeout(() => {	
-			    	searchAnime(subscriptions, user, anime);
-		    	}, 2000)
-		    })
+	    si.searchByUser({
+	    	user: subscriptions[user][anime]['provider'],
+	    	term: anime + ' ' + quality,
+		}).then(result => {
+			var newEntries = [];
+			result.forEach((entry) => {
+				if (!(subscriptions[user][anime].episode.includes(entry.name))) {
+					newEntries.push(entry)
+					subscriptions[user][anime].episode.push(entry.name);
+				}
+			})
+			resolve(searchAnimeMagnet(newEntries, user));
+	    })
+	    .catch((err) => {
+	    	console.log('Failed, retrying!');
+	    	setTimeout(() => {	
+		    	searchAnime(subscriptions, user, anime);
+	    	}, 2000)
+	    })
 
-		} else {
-		    si.searchByUser({
-		    	user: subscriptions[user][anime]['provider'],
-		    	term: anime + ' ' + subscriptions[user][anime]['episode'] + ' ' + quality,
-		    	n: 1,
-		    	category: subscriptions[user][anime]['language'] != 'n/a' ? subscriptions[user][anime]['language'] : '1_0'
-			}).then(result => {
-				resolve(searchAnimeMagnet(result, user, anime));
-		    })
-		    .catch((err) => {
-		    	console.log('Failed, retrying!');
-		    	setTimeout(() => {	
-			    	searchAnime(subscriptions, user, anime);
-		    	}, 2000)
-		    })
-		}
 	})	
 }
 
-function searchAnimeMagnet(result, user, anime) {
-	return new Promise((resolve, reject) => {		
-		if (result.length == 0) {
-			resolve('Nadie!');
+function searchAnimeMagnet(newEntries, user) {
+	return new Promise((resolve, reject) => {
+		var animeEmbed = [];
+		var counter = 0;
+
+		if (newEntries.length == 0) {
+			animeEmbed.push('Nadie!');
+			resolve(animeEmbed);
 		} else {
-			isgd.shorten(result[0].links.magnet, function(res) {
-				let animeEmbed = [{
-					name: '[ ➔ ' + anime + ' - Episódio ' + subscriptions[user][anime]['episode'] + ' ]',
-					value: 'Tamanho: ' + result[0].fileSize + ' | Seeders: ' + result[0].seeders + ' | [Link](' + res + ')'
-				}]
-	    		
-	    		let newEp = (parseInt(subscriptions[user][anime]['episode']) + 1).toString();
-	    		newEp = newEp.length < 2 ? '0' + newEp : newEp
-	    		subscriptions[user][anime]['episode'] = newEp;
-	    		resolve(animeEmbed)
-			});
+
+			function shortenMagnet() {
+				isgd.shorten(newEntries[counter].links.magnet, function(res) {
+					//.split(']')[1].split('[')[0].trim()
+					animeEmbed.push({
+						name: '[ ➔ '  + newEntries[counter].name.split(']')[1].split('[')[0].trim() + ' ]',
+						value: 'Tamanho: ' + newEntries[counter].fileSize + ' | Seeders: ' + newEntries[counter].seeders + ' | [Link](' + res + ')'
+					});
+
+					if (counter == (newEntries.length - 1)) {
+						resolve(animeEmbed);
+					} else {
+						counter++;
+						shortenMagnet();					
+					}					
+				});
+			}
+			shortenMagnet()
 		}
 	});
 }
@@ -350,15 +386,16 @@ function encode_utf8(s){
 }('\u4e0a\u6d77')
 
 // Append '0' to single digit numbers
-function treatEpisodeNumber(entry) {
-	let episodeString = entry.toString();
-	if (episodeString.length == 1) {
-		episodeString = '0' + episodeString;
+function treatEpisodeNumber(episode) {
+	episode = episode.toString();
+	if (episode.length == 1) {
+		episode = '0' + episode;
 	}
-	return episodeString;
+
+	return episode;
 }
 
-module.exports.getAiring = function(Discord, client, message, args) {
+/*module.exports.getAiring = function(Discord, client, message, args) {
 	message.channel.send('Aguarde um minutinho, posso levar um tempo para responder à este comando. (Coletar tantos animes de uma vez só é difícil, tá bom?)');
 	var embedFields = [{
 		name: 'Haaaai! Aqui está a lista de animes que estão sendo lançados atualmente!',
@@ -426,4 +463,129 @@ function getAiring() {
 
 		repeat();
 	})
+}*/
+
+module.exports.showCurrentlyReleasing = function(Discord, client, message, args) {
+	let animeProvider = checkProvider(message, args);
+	if (!animeProvider) { return; }
+
+	var initialEmbed = [{
+		name: 'Prontinho! Aqui está a lista de anime que estão sendo lançados pela fansub *__' + animeProvider.info.name + '__*! Esses são os que lembro de cabeça, mas se você esperar um pouquinho posso te trazer uma lista atualizada!',
+		value: '\u200b',
+	}];
+	let embedField = formatCurrentlyReleasing(initialEmbed, animeProvider.info.currentlyReleasing);
+
+	message.channel.send({embed: {
+	    color: 0x731399,
+	    author: {
+	      name: message.author.username,
+	      icon_url: message.author.avatarURL
+	    },
+	    fields: embedField
+	}}).then((message) => {
+		getCurrentlyReleasing(animeProvider).then((fansubEntries) => {
+			var initialEmbed = [{
+				name: 'Prontinho! Aqui está a lista de anime que estão sendo lançados pela fansub *__' + animeProvider.info.name + '__*, agora totalmente atualizada!',
+				value: '\u200b',
+			}];
+			embedField = formatCurrentlyReleasing(initialEmbed, animeProvider.info.currentlyReleasing);
+
+			message.edit({embed: {
+			    color: 0x731399,
+			    author: {
+			      name: message.author.username,
+			      icon_url: message.author.avatarURL
+			    },
+			    fields: embedField
+			}});
+		})
+	})
+}
+
+function getCurrentlyReleasing(animeProvider) {
+	return new Promise((resolve, reject) => {
+	    si.searchAllByUser({
+	    	term: ' ',
+	    	user: animeProvider.info.name
+		}).then(result => {
+			var fansubEntries = [];
+
+			result.forEach(entry => {
+				let torrentName = entry.name.split('[')[1].split(']')[1].split('-')[0].trim();
+				if (!fansubEntries.includes(torrentName)) {
+					if (+ new Date() - new Date(entry.timestamp * 1000) <= 1728000000) {
+						fansubEntries.push(torrentName);
+					}
+				}
+			})
+
+			providers[animeProvider.key].currentlyReleasing = fansubEntries;
+			resolve(fansubEntries);
+	    })
+	    .catch((err) => {
+	    	console.log(err);
+	    })
+	})
+}
+
+function formatCurrentlyReleasing(embedField, fansubEntries) {
+	var counter = 1;
+	var entryNumber = 1;
+
+	fansubEntries.forEach(entry => {
+		if (typeof embedField[counter] === 'undefined') {
+			embedField.push({
+				name: '\u200b',
+				value: []
+			})
+		}
+
+		if (embedField[counter].value.length < 10) {
+			embedField[counter].value.push('*__' + entry + '__*');
+		} 
+
+		if (entryNumber == fansubEntries.length) {
+			embedField[counter].value = embedField[counter].value.join(', ');
+		} 
+
+		if (embedField[counter].value.length == 10) {
+			embedField[counter].value = embedField[counter].value.join(', ');
+			counter++;
+		}
+		entryNumber += 1;
+	})
+
+	return embedField;
+}
+
+module.exports.updateCurrentlyReleasing = function updateCurrentlyReleasing() {
+	_updateCurrentlyReleasing().then(() => {
+		console.log('Done updating!')
+	});
+
+	//86400000 24h
+	setTimeout(updateCurrentlyReleasing, 43200000);
+}
+
+function _updateCurrentlyReleasing() {
+	return new Promise((resolve, reject) => {
+		var entries = Object.entries(providers);
+		var counter = 0;
+
+		function update() {
+		  	var animeProvider = {
+		  		key: entries[counter][0],
+		  		info: entries[counter][1]
+		  	}			
+			getCurrentlyReleasing(animeProvider).then(() => {
+				counter++;
+				if (counter < entries.length) {
+					update();
+				} else {
+					resolve();
+				}
+			})
+		}
+		update();		
+	})	
 }
