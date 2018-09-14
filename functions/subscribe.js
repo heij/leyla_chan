@@ -328,11 +328,13 @@ function cycleAnime(user) {
 function searchAnime(user, anime) {
 	return new Promise((resolve, reject) => {
 		var quality = subscriptions[user][anime]['quality'] != 'n/a' ? subscriptions[user][anime]['quality'] : '';
+      console.log(anime);
 
+      function trySearchAnime() {      	
 	    si.searchByUser({
 	    	user: subscriptions[user][anime]['provider'],
 	    	term: anime + ' ' + quality,
-		}).then(result => {
+		  }).then(result => {
 			var newEntries = [];
 			result.forEach((entry) => {
 				if (!(subscriptions[user][anime].episode.includes(entry.name))) {
@@ -345,11 +347,14 @@ function searchAnime(user, anime) {
 	    .catch((err) => {
 	    	console.log('Failed, retrying!');
 	    	setTimeout(() => {	
-		    	searchAnime(subscriptions, user, anime);
-	    	}, 2000)
+		    	trySearchAnime;
+	    	}, 3000)
 	    })
+      }
 
-	})	
+      trySearchAnime();
+
+	})
 }
 
 function searchAnimeMagnet(newEntries, user) {
