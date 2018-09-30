@@ -24,8 +24,7 @@ const utils = require("./functions/utils");
 client.on("ready", () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
 
-  //180000
-  setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
+  //setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
@@ -51,11 +50,11 @@ client.on("message", async message => {
   		nyaa.batch(Discord, client, message, args);
   		break;
   	case 'sub':
-  	  	subscription.sub(Discord, client, message, args);
-  	  	break;
+	  	subscription.sub(Discord, client, message, args);
+	  	break;
   	case 'unsub':
-    		subscription.unsub(Discord, client, message, args);
-    		break;
+  		subscription.unsub(Discord, client, message, args);
+  		break;
   	case 'list':
   		subscription.list(Discord, client, message, args);
   		break;

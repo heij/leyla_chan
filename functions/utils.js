@@ -1,8 +1,8 @@
 require('dotenv').config();
 const fs = require('fs');
-const providers = require('../providers');
-const languages = require('../languages');
-const qualities = require('../qualities');
+const providers = require('../options/providers');
+const languages = require('../options/languages');
+//const qualities = require('../options/qualities');
 var path = require('path');
 
 module.exports.help = function(Discord, client, message, args) {
@@ -154,18 +154,6 @@ module.exports.help = function(Discord, client, message, args) {
 		})
 	}
 }
-
-/*module.exports.addsub = function(Discord, client, message, args) {
-	fs.writeFile(path.join(__dirname, '../', 'providers.js'), JSON.stringify(providers), 'utf8', (err) => {
-		if (err) {
-			console.log(err)
-			message.channel.send('Oh não... Aconteceu algo de ruim e eu não consegui adicionar a sua fansub... Porque não tenta novamente mais tarde?');
-			return;
-		} else {
-			message.channel.send('Pronto! Terminei de configurar sua fansub; agora você pode procurar pelos torrents do seu fansub favorito!');
-		}
-	});
-}*/
 
 function formatProviders() {
 	let entries = Object.entries(providers);

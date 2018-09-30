@@ -3,155 +3,162 @@ const isgd = require('isgd');
 const fs = require('fs');
 var path = require('path'); 
 
-const providers = require('../providers');
-const languages = require('../languages');
-const qualities = require('../qualities');
+const providers = require('../options/providers');
+const languages = require('../options/languages');
 
-function checkProviders(message, args) {
-  	if (args.includes('--p')) {
-  		let propertyIndex = args.indexOf('--p');
+function checkProperty(query, identifier, type) {
+	const propIndex = query.indexOf(identifier);
 
-  		if (!(args[propertyIndex+1] in providers)) {
-  			message.channel.send('Não consegui encontrar o fansub que você escolheu... Tem certeza de que você digitou um fansub existente?');
-  			return;
-		} else {
-			var animeProvider = providers[args[propertyIndex+1]];
-		}
-		args[propertyIndex] = '';
-		args[propertyIndex+1] = '';
-  	}
+	const formatInput = (value, type, query) => {
+		return { value: value, type: type, query: query };
+	};
 
-  	if (animeProvider) { return animeProvider }
-	else { return null }
-}
+	const validate = (valid, value) => {
+		return { valid: valid, value: value };
+	};
 
-function checkEpisodes(message, args) {
-  	if(args.includes('--e')) {
-  		let propertyIndex = args.indexOf('--e');
-
-  		try {
-  			var animeRange = args[propertyIndex+1].split('~');
-
-  			if (isNaN(animeRange[0])) {
-				throw '';
-  			} else {
-  				animeRange[0] = parseInt(animeRange[0]);
-  			}
-
-			if (isNaN(animeRange[1])) {
-				if (animeRange[1] != 'atual') {
-					throw '';
-				}
-			} else {
-				animeRange[1] = parseInt(animeRange[1]);
-			}
-
-  			if (!(isNaN(animeRange[1])) && animeRange[0] > animeRange[1]) {
-  				message.channel.send('Ehhh... Talvez você tenha invertido os números dos episódios? Por via das dúvidas, verifique isso e tente novamente.');
-  				return;
-  			}
-  		} catch(err) {
-  			message.channel.send('Hmmm, parece que tem algo errado com os números dos episódios que você escolheu... Dê uma olhada nisso e tente novamente, ok?');
-  			return;
-  		}
-		args[propertyIndex] = '';
-		args[propertyIndex+1] = '';
-  	}
-
-  	if (animeRange) { return animeRange }
-	else { return null }
-}
-
-function checkQuality(message, animeProvider, args) {
-	if(args.includes('--q')) {
-  		if (animeProvider.qualityFormat == false) {
-  			message.channel.send('A fansub especificada não marca seus torrents com a resolução do anime (provavelmente ela trabalha com uma única resolução), então vou ter que ignorar essa opção... Desculpe o inconveniente!');
-  			return;
-  		}
-
-  		let propertyIndex = args.indexOf('--q');
-
-		if (!(qualities.includes(args[propertyIndex+1]))) {
-			message.channel.send('Hmmm, isso não parece ser uma qualidade existente... Dê uma olhada nisso e tente novamente, ok?');
-			return;
-		} else {
-			var animeQuality = args[propertyIndex+1];
-		}
-		args[propertyIndex] = '';
-		args[propertyIndex+1] = '';
-  	}
-  	if (animeQuality) { return animeQuality }
-	else { return ''; }  	
-}
-
-function checkLanguage(message, args) {
-  	if (args.includes('--l')) {
-   		let propertyIndex = args.indexOf('--l');
-
-  		if (!(args[propertyIndex+1] in languages)) {
-  			message.channel.send('Eu... eu.... não conocer su linguagem. Exibir todas então, ok?');
-  		} else {
-  			var animeLanguage = languages[args[propertyIndex+1]];
-  		}
-		args[propertyIndex] = '';
-		args[propertyIndex+1] = '';
-  	}
-
-  	if (animeLanguage) { return animeLanguage }
-	else { return null }
-}
-
-module.exports.search = function(Discord, client, message, args) {
-	var animeProvider = checkProviders(message, args);
-	
-	// If the specified fansub exists, check if the specified quality (if any) is valid within the fansub
-	if (typeof animeProvider == 'undefined') { return; }
-	else if (animeProvider) { 
-		animeProvider = animeProvider.name;
-		var animeQuality = checkQuality(message, animeProvider, args);
-		if (typeof animeQuality == 'undefined') { return; }
+	if (propIndex > -1) {
+		query.splice(propIndex, 1);
+		return {
+			input: formatInput(query.splice(propIndex, 1)[0], type, query),
+			validate: validate
+		};
 	}
-	
-	var animeLanguage = checkLanguage(message, args);
-    var query = args.join(" ").trim();
 
-    //message.delete().catch(O_o=>{console.log(O_o)}); 
+	return {
+		input: formatInput(undefined, type, query),
+		validate: validate
+	};
+}
+
+function checkProvider(currentProperties) {
+	const provider = checkProperty(currentProperties.query, '--p', 'provider');
+
+	try {
+		if (provider.input.value == undefined || providers.hasOwnProperty(provider.input.value)) return provider.validate(true, provider.input);
+		else throw 'Eu acho que não conheço essa fansub... escolha uma dentre as que conheço e tente novamente!'
+	} catch(err) {
+		return provider.validate(false, err);
+	}
+}
+
+function checkQuality(currentProperties) {
+	const quality = checkProperty(currentProperties.query, '--q', 'quality');
+
+	try {
+		if (quality.input.value == undefined) return quality.validate(true, quality.input);
+		if (currentProperties.provider == undefined) throw 'Pra ter certeza de que tudo vai vir certinho, você precisa especificar uma fansub para procurar por qualidade!';
+		if (providers[currentProperties.provider].qualities.hasOwnProperty(quality.input.value)) return quality.validate(true, quality.input);
+		else throw 'Hmmm, eu não acho acho que essa seja uma qualidade válida para a fansub que você escolheu... Dê uma olhada nisso e tente novamente!';
+	} catch (err) {
+		return quality.validate(false, err);
+	}
+}
+
+function checkLanguage(currentProperties) {
+	const language = checkProperty(currentProperties.query, '--l', 'language');
+	
+	try {
+	  	if (language.input.value == undefined || languages.hasOwnProperty(language.input.value)) return language.validate(true, language.input);
+	  	else throw 'Eu... não hablar su language? Errr... Tente especificar uma linguagem que eu conheça, por favor!';
+	} catch (err) {
+  		return language.validate(false, err);
+	}
+}
+
+function checkEpisode(currentProperties) {
+	const episode = checkProperty(currentProperties.query, '--e', 'episode');
+	
+	try {
+		if (episode.input.value == undefined) return episode.validate(true, episode.input);
+
+		// Return error if parameter is not a number;
+		if (!Number.isInteger(episode.input.value)) throw 'Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações, então nada de letras!';
+
+		episode.input.value = padEpisode(episode.input.value);
+		return episode.validate(true, episode.input);
+	} catch (err) {
+		return episode.validate(false, err);
+	}
+}
+
+function checkBatchEpisodes(currentProperties) {
+	const episodes = checkProperty(currentProperties.query, '--e', 'episodes');
+
+	try {
+		if (episodes.input.value == undefined) throw 'Você precisa especificar um conjunto de episódios para poder usar esse comando!';
+
+		const inputTest = /^\d+~(atual|\d+)$/.test(episodes.input.value);
+		if (!inputTest) throw 'Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações!'
+
+		episodes.input.value = episodes.input.value.split('~');
+
+		// Throw an error if the number of the first episode is higher than that of the second one;
+		if (episodes.input.value.every(episode => !Number.isNaN(episode)) && 
+			parseInt(episodes.input.value[1]) < parseInt(episodes.input.value[0]))
+			throw 'Hmmmm, você tem certeza que não inverteu os números dos episódio? Dê uma olhada nisso e tente novamente!'
+
+		return episodes.validate(true, episodes.input);
+	} catch (err) {
+		return episodes.validate(false, err);
+	}
+}
+
+function checkAllProperties(query, ...options) {
+	try {
+		let result = options.reduce((result, validator) => {
+			const property = validator(result);
+
+			if (property.valid == false) throw property.value;
+
+			result.query = property.value.query;
+			result[property.value.type] = property.value.value;
+			return result;
+		}, { query: query } );
+		result.query = result.query.join(' ').trim();
+		return result;
+	} catch(errMsg) {
+		return errMsg;
+	}
+}
+
+module.exports.search = async function(Discord, client, message, args) {
+	const options = checkAllProperties(args, checkProvider, checkQuality, checkLanguage, checkEpisode);
+	if (typeof options == 'string') return message.channel.send(options);
+
 	message.channel.send('Entendido, capitão! Leyla-chan partindo em busca dos seus torrents!');
-	
-	if (typeof animeQuality != 'undefined') {
-		query = query + ' ' + animeQuality;
-	}
 
-	if (animeProvider != null) {
-	    si.searchByUser({
-	    	user: animeProvider,
-	    	term: query,
-	    	category: animeLanguage || '1_0'
-		}).then(result => {
-			if (result.length == 0) {
-				message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
-				return;
-			} else {
-				returnMagnet(Discord, client, message, result);
-			}
-	    })
+	const searchType = (provider, quality, language, episode, query) => {
+		if (provider != undefined) {
+			return si.searchByUser({ 
+				user: providers[provider].name, 
+				term: providers[provider].formatName(query, episode, quality), 
+				category: languages[language] || '1_0' 
+			});
+		} else {
+			return si.search({ 
+				term: query,
+				category: languages[language] || '1_0'
+			});
+		}
+	};
 
-	} else {
-	    si.search({
-	    	term: query,
-	    	category: animeLanguage || '1_0'
-		}).then(result => {
-			if (result.length == 0) {
-				message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
-				return;
-			} else {
-				returnMagnet(Discord, client, message, result);
-			}
-	    })		
+	try {
+		const searchResult = await searchType(options.provider, options.quality, options.language, options.episode, options.query);
+		if (searchResult.length > 0) return await returnMagnet(Discord, client, message, searchResult);
+		else return message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
+	} catch(err) {
+		console.log(err)
+		return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');
 	}
 }
 
 module.exports.batch = function(Discord, client, message, args) {
+	const options = checkAllProperties(args, checkProvider, checkQuality, checkLanguage, checkBatchEpisodes);
+	if (typeof options == 'string') return message.channel.send(options);
+	console.log(options)
+
+	/*
 	// Checks for required parameters (fansub and episodes)
 	if (!(args.includes('--p'))) {
 		message.channel.send('Você precisa especificar um fansub para poder usar esse comando; eu tenho uma lista dos fansubs disponíveis no comando __*\'help batch*__');
@@ -161,7 +168,7 @@ module.exports.batch = function(Discord, client, message, args) {
 		return;
 	}
 
-	var animeProvider = checkProviders(message, args).name;
+	var animeProvider = checkProvider(message, args).name;
 	if (typeof animeProvider == 'undefined') { return; };
 	
 	var animeRange = checkEpisodes(message, args);
@@ -177,7 +184,7 @@ module.exports.batch = function(Discord, client, message, args) {
 	    var episodesInRange = [];
 	    var counter = 0;
 	    while (animeRange[0] <= animeRange[1]) {
-	    	let episodeString = treatEpisodeNumber(animeRange[0]);
+	    	let episodeString = padEpisode(animeRange[0]);
 	    	episodesInRange[counter] = {}
 	    	episodesInRange[counter].anime = query + ' ' + episodeString + ' ' + animeQuality;
 	    	episodesInRange[counter].episode = episodeString;
@@ -187,7 +194,7 @@ module.exports.batch = function(Discord, client, message, args) {
     } else {
     	var episodesInRange = {};
     	episodesInRange.anime = query + ' ' + animeQuality;
-    	episodesInRange.episode = treatEpisodeNumber(animeRange[0]);
+    	episodesInRange.episode = padEpisode(animeRange[0]);
     }
 
     message.channel.send('Aguarde um momentinho, isso pode demorar um pouco. (Meu trabalho é mais difícil do que parece, sabe?)');
@@ -201,7 +208,7 @@ module.exports.batch = function(Discord, client, message, args) {
 		    },	    
 		  }
 		})    	
-    });
+    });*/
 }
 
 function returnMagnet(Discord, client, message, result) {
@@ -430,7 +437,7 @@ function returnMultisearchEmbed(Discord, client, message, episodesInRange, anime
 					}
 
 					isgd.shorten(result[episodeCheckCounter].links.magnet, function(res) {
-			    		episodesInRange.episode = treatEpisodeNumber(parseInt(episodesInRange.episode) + 1) 
+			    		episodesInRange.episode = padEpisode(parseInt(episodesInRange.episode) + 1) 
 						embedFields.push({
 							name: '*__' + result[episodeCheckCounter].name + '__*',
 							value: 'Tamanho: ' + result[episodeCheckCounter].fileSize + ' | Seeders: ' + result[episodeCheckCounter].seeders + ' | [Link](' + res + ')' + '\n \u200b'
@@ -451,10 +458,6 @@ function returnMultisearchEmbed(Discord, client, message, episodesInRange, anime
 }
 
 // Append '0' to single digit numbers
-function treatEpisodeNumber(entry) {
-	let episodeString = entry.toString();
-	if (episodeString.length == 1) {
-		episodeString = '0' + episodeString;
-	}
-	return episodeString;
+function padEpisode(entry) {
+	return entry.toString().padStart(2, '0');
 }

@@ -1,14 +1,12 @@
 const {si, pantsu} = require('nyaapi');
 const isgd = require('isgd');
 const fs = require('fs');
-const Kitsu = require('kitsu');
-const api = new Kitsu();
 var subscriptions = require('../subscriptions/userIndex');
 var path = require('path');
 
-const providers = require('../providers');
-const languages = require('../languages');
-const qualities = require('../qualities');
+const providers = require('../options/providers');
+const languages = require('../options/languages');
+//const qualities = require('../options/qualities');
 
 const control = [];
 for (let i=1; i<=10;i++) {
