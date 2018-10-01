@@ -145,7 +145,7 @@ module.exports.search = async function(Discord, client, message, args) {
 
 	try {
 		const searchResult = await searchByType(options.provider, options.quality, options.language, options.episode, options.query);
-		if (searchResult.length > 0) return await returnMagnet(Discord, client, message, searchResult);
+		if (searchResult.length > 0) return await returnSearchResult(Discord, client, message, searchResult);
 		else return message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
 	} catch(err) {
 		console.log(err);
@@ -159,7 +159,7 @@ module.exports.batch = async function(Discord, client, message, args) {
     message.channel.send('Aguarde um momentinho, isso pode demorar um pouco. (Meu trabalho é mais difícil do que parece, sabe?)');
     
     try {
-	    const searchResult = await returnMultisearchEmbed(options);
+	    const searchResult = await returnBatchResult(options);
 		return message.channel.send({embed: {
 		    color: 0x731399,
 		    fields: searchResult,
@@ -175,147 +175,124 @@ module.exports.batch = async function(Discord, client, message, args) {
     };
 }
 
-function returnMagnet(Discord, client, message, result) {
-	
-	let queryResult = [];
-	let totalPageCount = Math.ceil(result.length/10);
-	let currentPage = 1;
-	let control = [];
+async function returnSearchResult(Discord, client, message, searchResult) {
+	const totalPageCount = Math.ceil(searchResult.length/10);
+	let currentPage = 0;
 
-	// Divide the results in separate pages
-	let counter = 1;
-	result.forEach(entry => {
-		let page = Math.ceil(counter/10);
-		if (!(page in queryResult)) {
-			queryResult[page] = [{
-				name: 'Pagina ' + page + '/' + totalPageCount,
+	// Initialize embed with empty pages;
+	let resultEmbed = Array.from({ length: totalPageCount }, 
+		(v, i) => {
+			return [{
+				name: `Pagina ${i + 1} / ${totalPageCount}`,
 				value: '\u200b'
-			}]
-		}
-
-		queryResult[page].push({
-    		name: counter + " - " + entry.name,
-    		value: '```Tamanho: ' + entry.fileSize + ' | Seeders: ' + entry.seeders + '```'
+			}];
 		});
-		control.push(counter)
-		counter += 1;
+
+
+	// Fill pages with the results from the received query;
+	searchResult.forEach((entry, index) => {
+		const page = Math.floor(index / 10);
+
+		resultEmbed[page].push({
+    		name: `${index + 1} - ${entry.name}`,
+    		value: `\`\`\`Tamanho: ${entry.fileSize} | Seeders: ${entry.seeders}\`\`\`` 
+		});
 	});
 
-	/*queryResult.forEach(entry => {
-		entry.push({
-			name: '\u200b',
-			value: '```Psiu, você também pode navegar enviando os caracteres (<, >, c)```'		
-		})
-	});*/
+	let sentEmbed = await message.channel.send({
+		embed: {
+		    color: 0x731399,
+		    fields: resultEmbed[currentPage],
+		    author: {
+		      name: message.author.username,
+		      icon_url: message.author.avatarURL
+		    },
+		}
+	});
+	await sentEmbed.react("◀");
+	await sentEmbed.react("▶");
+	await sentEmbed.react("❌");
 
-	message.channel.send({
-			embed: {
-			    color: 0x731399,
-			    fields: [{
-			    	name:  '\u200b',
-			    	value:  '\u200b'
-			    }],
-			    author: {
-			      name: message.author.username,
-			      icon_url: message.author.avatarURL
-			    },
-			}
-	}).then(async (sentEmbed) => {
-		// Collect and process requests to change the current page or cancel the search; also, automatically cancel the search after some time 
-		// has passed without any user interaction
-		editEmbed(sentEmbed);
-		await sentEmbed.react("◀");
-		await sentEmbed.react("▶");
-		await sentEmbed.react("❌");
+	const reactMenu = new Discord.ReactionCollector(sentEmbed, (reaction, user) => user.id === message.author.id && (reaction.emoji.name === "◀" || reaction.emoji.name === "▶" || reaction.emoji.name === "❌"));
+    const choiceCollector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id);
+	let picked = false;
+	var maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 
-		const reactMenu = new Discord.ReactionCollector(sentEmbed, (reaction, user) => user.id === message.author.id && (reaction.emoji.name === "◀" || reaction.emoji.name === "▶" || reaction.emoji.name === "❌"));
-	    const choiceCollector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id);
-		let picked = false;
+	reactMenu.on("collect", reaction => {
+	    const choice = reaction.emoji.name;
+		reaction.remove(message.author);
 
-		var maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
+	    if (choice === "◀") {
+	    	if (currentPage - 1 >= 0) {
+	    		currentPage--;
+	    		clearInterval(maxTime);
+	    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
+	    		changeEmbedPage(sentEmbed)
+    		}
+	    } else if (choice === "▶") {
+	    	if (currentPage + 1 < totalPageCount) {
+	    		currentPage++;
+	    		clearInterval(maxTime);
+	    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
+	    		changeEmbedPage(sentEmbed)
+    		}
+	    } else {
+        	picked = true;
+        	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
+        	return cancelListen(reactMenu, choiceCollector);
+	    }
+	});
+	reactMenu.on("end", reaction => {
+		sentEmbed.delete();
+	});
 
-		reactMenu.on("collect", reaction => {
-		    const chosen = reaction.emoji.name;
-			reaction.remove(message.author);
-
-		    if (chosen === "◀") {
-		    	if (currentPage - 1 >= 1) {
+    choiceCollector.on('collect', message => {
+        if (!isNaN(message.content)) {
+        	const fileEntry = parseInt(message.content)
+        	if (0 < fileEntry && fileEntry <= searchResult.length) {
+        		picked = true;
+        		cancelListen(reactMenu, choiceCollector, sentEmbed);
+				isgd.shorten(searchResult[fileEntry - 1].links.magnet, function(res) {
+			    	return message.channel.send(`Aqui está o link do seu episódio! Divirta-se! :3\n\`\`\`${searchResult[fileEntry -1].name}\`\`\`\n${res}`);
+				});
+        	} else {
+        		message.channel.send('Não consigo encontrar este episódio... Tem certeza que digitou um número válido?');
+        	}
+        } else {
+        	if(message.content == 'c') {
+            	picked = true;
+            	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
+            	return cancelListen(reactMenu, choiceCollector, sentEmbed);
+            } else if(message.content == '<') {
+		    	if (currentPage - 1 >= 0) {
 		    		currentPage--;
 		    		clearInterval(maxTime);
 		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-		    		editEmbed(sentEmbed)
+		    		changeEmbedPage(sentEmbed)
 	    		}
-		    } else if (chosen === "▶") {
-		    	if (currentPage + 1 <= totalPageCount) {
+            } else if(message.content == '>') {
+		    	if (currentPage + 1 < totalPageCount) {
 		    		currentPage++;
 		    		clearInterval(maxTime);
 		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-		    		editEmbed(sentEmbed)
+		    		changeEmbedPage(sentEmbed)
 	    		}
-		    } else {
-            	picked = true;
-            	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
-            	cancelListen(reactMenu, choiceCollector);
-            	return;
-		    }
-		});
-		reactMenu.on("end", reaction => {
-			sentEmbed.delete();
-		});
+            } else {
+            	message.channel.send('Ehhhhh?! Pare de me ignorar e escolha um episódio!');
+            }
+        }
+    })
+    choiceCollector.on('end', () => {
+    	if (picked == false) {
+	    	return message.channel.send('Tá tão difícil assim escolher um torrent? Sigh... Me chame novamente quando tiver decidido de verdade!');
+	    }
+    });
 
-
-	    choiceCollector.on('collect', message => {
-	        if (!isNaN(message.content)) {
-	        	let fileNumber = parseInt(message.content)
-	        	if (control.includes(fileNumber)) {
-	        		picked = true;
-	        		cancelListen(reactMenu, choiceCollector, sentEmbed);
-					isgd.shorten(result[fileNumber - 1].links.magnet, function(res) {
-				    	message.channel.send('Aqui está o link do seu episódio! Divirta-se! :3');
-						message.channel.send('```' + result[fileNumber -1].name + '```');
-			    		message.channel.send(res);
-					});
-	        	} else {
-	        		message.channel.send('Não consigo encontrar este episódio... Tem certeza que digitou um número válido?');
-	        	}
-	        } else {
-	        	if(message.content == 'c') {
-	            	picked = true;
-	            	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
-	            	cancelListen(reactMenu, choiceCollector, sentEmbed);
-	            	return;
-	            } else if(message.content == '<') {
-			    	if (currentPage - 1 >= 1) {
-			    		currentPage--;
-			    		clearInterval(maxTime);
-			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-			    		editEmbed(sentEmbed)
-		    		}
-	            } else if(message.content == '>') {
-			    	if (currentPage + 1 <= totalPageCount) {
-			    		currentPage++;
-			    		clearInterval(maxTime);
-			    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-			    		editEmbed(sentEmbed)
-		    		}
-	            } else {
-	            	message.channel.send('Ehhhhh?! Pare de me ignorar e escolha um episódio!');
-	            }
-	        }
-	    })
-	    choiceCollector.on('end', () => {
-	    	if (picked == false) {
-		    	message.channel.send('Tá tão difícil assim escolher um torrent? Sigh... Me chame novamente quando tiver decidido de verdade!');
-		    	return;
-		    }
-	    });		
-	});
-
-	async function editEmbed(sentEmbed) {
+	async function changeEmbedPage(sentEmbed) {
 		sentEmbed.edit({
 			embed: {
 			    color: 0x731399,
-			    fields: queryResult[currentPage],
+			    fields: resultEmbed[currentPage],
 			    author: {
 			      name: message.author.username,
 			      icon_url: message.author.avatarURL
@@ -327,10 +304,10 @@ function returnMagnet(Discord, client, message, result) {
 	function cancelListen(reactMenu, choiceCollector) {
 		reactMenu.stop();
 		choiceCollector.stop();
-	}
-}
+	}		
+};
 
-async function returnMultisearchEmbed(options) {
+async function returnBatchResult(options) {
 	let searchResult = [{
 			name: 'Prontinho, obrigada pela paciência; aqui estão os animes que você pediu! Divirta-se!',
 			value: '\u200b'
