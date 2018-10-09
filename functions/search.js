@@ -1,124 +1,113 @@
 const {si, pantsu} = require('nyaapi');
 const isgd = require('isgd');
 const fs = require('fs');
-var path = require('path'); 
+const path = require('path'); 
 
 const providers = require('../options/providers');
 const languages = require('../options/languages');
 
-function checkProperty(query, identifier, type) {
+function PropertyError(message) {
+  Error.captureStackTrace(this, PropertyError);
+  this.name = PropertyError.name;
+  this.message = message;
+};
+
+function getOption(query, identifier, type) {
 	const propIndex = query.indexOf(identifier);
 
 	const formatInput = (value, type, query) => {
 		return { value: value, type: type, query: query };
 	};
 
-	const validate = (valid, value) => {
-		return { valid: valid, value: value };
-	};
-
 	if (propIndex > -1) {
 		query.splice(propIndex, 1);
-		return {
-			input: formatInput(query.splice(propIndex, 1)[0], type, query),
-			validate: validate
-		};
+		return formatInput(query.splice(propIndex, 1)[0], type, query)
 	}
 
-	return {
-		input: formatInput(undefined, type, query),
-		validate: validate
-	};
+	return formatInput(undefined, type, query)
 }
 
-function checkProvider(currentProperties) {
-	const provider = checkProperty(currentProperties.query, '--p', 'provider');
+function checkProvider(currentProperties, required) {
+	const provider = getOption(currentProperties.query, '--p', 'provider');
 
-	try {
-		if (provider.input.value == undefined || providers.hasOwnProperty(provider.input.value)) return provider.validate(true, provider.input);
-		else throw 'Eu acho que não conheço essa fansub... escolha uma dentre as que conheço e tente novamente!'
-	} catch(err) {
-		return provider.validate(false, err);
+	if (provider.value === undefined) {
+		if (!required) return provider;
+		else throw new PropertyError('Você precisa especificar uma fansub para poder usar esse comando!');
 	}
+	if (providers.hasOwnProperty(provider.value)) return provider;
+	throw new PropertyError('Eu acho que não conheço essa fansub... escolha uma dentre as que conheço e tente novamente!');
 }
 
-function checkQuality(currentProperties) {
-	const quality = checkProperty(currentProperties.query, '--q', 'quality');
+function checkQuality(currentProperties, required) {
+	const quality = getOption(currentProperties.query, '--q', 'quality');
 
-	try {
-		if (quality.input.value == undefined) return quality.validate(true, quality.input);
-		if (currentProperties.provider == undefined) throw 'Pra ter certeza de que tudo vai vir certinho, você precisa especificar uma fansub para procurar por qualidade!';
-		if (providers[currentProperties.provider].qualities.hasOwnProperty(quality.input.value)) return quality.validate(true, quality.input);
-		else throw 'Hmmm, eu não acho acho que essa seja uma qualidade válida para a fansub que você escolheu... Dê uma olhada nisso e tente novamente!';
-	} catch (err) {
-		return quality.validate(false, err);
+	if (quality.value === undefined) {
+		if (!required) return quality;
+		else throw new PropertyError('Você precisa especificar uma qualidade para poder usar esse comando!');
 	}
+	if (currentProperties.provider === undefined) throw new PropertyError('Pra ter certeza de que tudo vai vir certinho, você precisa especificar uma fansub para procurar por qualidade!');
+	if (providers[currentProperties.provider].qualities.hasOwnProperty(quality.value)) return quality;
+	throw new PropertyError('Hmmm, eu não acho acho que essa seja uma qualidade válida para a fansub que você escolheu... Dê uma olhada nisso e tente novamente!');
 }
 
-function checkLanguage(currentProperties) {
-	const language = checkProperty(currentProperties.query, '--l', 'language');
+function checkLanguage(currentProperties, required) {
+	const language = getOption(currentProperties.query, '--l', 'language');
 	
-	try {
-	  	if (language.input.value == undefined || languages.hasOwnProperty(language.input.value)) return language.validate(true, language.input);
-	  	else throw 'Eu... não hablar su language? Errr... Tente especificar uma linguagem que eu conheça, por favor!';
-	} catch (err) {
-  		return language.validate(false, err);
+  	if (language.value === undefined) {
+		if (!required) return language;
+		else throw new PropertyError('Você precisa especificar uma linguagem para poder usar esse comando!');
 	}
+	if (languages.hasOwnProperty(language.value)) return language;
+	throw new PropertyError('Eu... não hablar su language? Errr... Tente especificar uma linguagem que eu conheça, por favor!');
 }
 
-function checkEpisode(currentProperties) {
-	const episode = checkProperty(currentProperties.query, '--e', 'episode');
+function checkEpisode(currentProperties, required) {
+	const episode = getOption(currentProperties.query, '--e', 'episode');
 	
-	try {
-		if (episode.input.value == undefined) return episode.validate(true, episode.input);
-
-		// Return error if parameter is not a number;
-		if (!Number.isInteger(episode.input.value)) throw 'Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações, então nada de letras!';
-
-		episode.input.value = padEpisode(episode.input.value);
-		return episode.validate(true, episode.input);
-	} catch (err) {
-		return episode.validate(false, err);
+	if (episode.value === undefined) {
+		if (!required) return episode;
+		else throw new PropertyError('Você precisa especificar um episódio para poder usar esse comando!');
 	}
+	// Return error if parameter is not a number;
+	if (!Number.isInteger(episode.value)) throw new PropertyError('Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações, então nada de letras!');
+
+	episode.value = padEpisode(episode.value);
+	return episode;
 }
 
-function checkBatchEpisodes(currentProperties) {
-	const episodes = checkProperty(currentProperties.query, '--e', 'episodes');
+function checkBatchEpisodes(currentProperties, required) {
+	const episodes = getOption(currentProperties.query, '--e', 'episodes');
+	
+	if (episodes.value === undefined) {
+		if (!required) return episodes;
+		else throw new PropertyError('Você precisa especificar um conjunto de episódios para poder usar esse comando!');
+	} 
 
-	try {
-		if (episodes.input.value == undefined) throw 'Você precisa especificar um conjunto de episódios para poder usar esse comando!';
+	const inputTest = /^\d+~(atual|\d+)$/.test(episodes.value);
+	if (!inputTest) throw new PropertyError('Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações!');
 
-		const inputTest = /^\d+~(atual|\d+)$/.test(episodes.input.value);
-		if (!inputTest) throw 'Isso não parece ser um número de episódio válido... Lembre-se de que eu não sei resolver equações!'
+	episodes.value = episodes.value.split('~');
+	// Throw an error if the number of the first episode is higher than that of the second one;
+	if (episodes.value.every(episode => !Number.isNaN(episode)) && 
+		parseInt(episodes.value[1]) < parseInt(episodes.value[0]))
+		throw new PropertyError('Hmmmm, você tem certeza que não inverteu os números dos episódio? Dê uma olhada nisso e tente novamente!');
 
-		episodes.input.value = episodes.input.value.split('~');
-
-		// Throw an error if the number of the first episode is higher than that of the second one;
-		if (episodes.input.value.every(episode => !Number.isNaN(episode)) && 
-			parseInt(episodes.input.value[1]) < parseInt(episodes.input.value[0]))
-			throw 'Hmmmm, você tem certeza que não inverteu os números dos episódio? Dê uma olhada nisso e tente novamente!'
-
-		return episodes.validate(true, episodes.input);
-	} catch (err) {
-		return episodes.validate(false, err);
-	}
+	return episodes;
 }
 
-function checkAllProperties(query, ...options) {
+function checkAllProperties(query, options) {
 	try {
 		let result = options.reduce((result, validator) => {
-			const property = validator(result);
+			const property = validator[0](result, validator[1]);
 
-			if (property.valid == false) throw property.value;
-
-			result.query = property.value.query;
-			result[property.value.type] = property.value.value;
+			result.query = property.query;
+			result[property.type] = property.value;
 			return result;
 		}, { query: query } );
 		result.query = result.query.join(' ').trim();
 		return result;
-	} catch(errMsg) {
-		return errMsg;
+	} catch(err) {
+		throw err;
 	}
 }
 
@@ -139,26 +128,35 @@ function searchByType(provider, quality, language, episode, query) {
 };
 
 module.exports.search = async function(Discord, client, message, args) {
-	const options = checkAllProperties(args, checkProvider, checkQuality, checkLanguage, checkEpisode);
-	if (typeof options == 'string') return message.channel.send(options);
-	message.channel.send('Entendido, capitão! Leyla-chan partindo em busca dos seus torrents!');
-
 	try {
+		const options = checkAllProperties(args, [
+			[checkProvider, false], 
+			[checkQuality, false], 
+			[checkLanguage, false], 
+			[checkEpisode, false]
+		]);
+		message.channel.send('Entendido, capitão! Leyla-chan partindo em busca dos seus torrents!');
+
 		const searchResult = await searchByType(options.provider, options.quality, options.language, options.episode, options.query);
 		if (searchResult.length > 0) return await returnSearchResult(Discord, client, message, searchResult);
 		else return message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
 	} catch(err) {
-		console.log(err);
+		if (err instanceof PropertyError) return message.channel.send(err.message);
+		console.log(err)
 		return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');
 	}
 }
 
 module.exports.batch = async function(Discord, client, message, args) {
-	const options = checkAllProperties(args, checkProvider, checkQuality, checkLanguage, checkBatchEpisodes);
-	if (typeof options == 'string') return message.channel.send(options);
-    message.channel.send('Aguarde um momentinho, isso pode demorar um pouco. (Meu trabalho é mais difícil do que parece, sabe?)');
-    
     try {
+		const options = checkAllProperties(args, [
+			[checkProvider, true], 
+			[checkQuality, false], 
+			[checkLanguage, false], 
+			[checkBatchEpisodes, true]
+		]);
+    	message.channel.send('Aguarde um momentinho, isso pode demorar um pouco. (Meu trabalho é mais difícil do que parece, sabe?)');
+
 	    const searchResult = await returnBatchResult(options);
 		return message.channel.send({embed: {
 		    color: 0x731399,
@@ -170,6 +168,7 @@ module.exports.batch = async function(Discord, client, message, args) {
 		  }
 		});
     } catch(err) {
+    	if (err instanceof PropertyError) return message.channel.send(err.message);
     	console.log(err);
     	return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');	
     };
@@ -225,23 +224,19 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 	    if (choice === "◀") {
 	    	if (currentPage - 1 >= 0) {
 	    		currentPage--;
-	    		clearInterval(maxTime);
-	    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-	    		changeEmbedPage(sentEmbed)
+				handleChoice()
     		}
 	    } else if (choice === "▶") {
 	    	if (currentPage + 1 < totalPageCount) {
 	    		currentPage++;
-	    		clearInterval(maxTime);
-	    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-	    		changeEmbedPage(sentEmbed)
+				handleChoice()
     		}
 	    } else {
         	picked = true;
         	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
         	return cancelListen(reactMenu, choiceCollector);
 	    }
-	});
+	})
 	reactMenu.on("end", reaction => {
 		sentEmbed.delete();
 	});
@@ -251,10 +246,12 @@ async function returnSearchResult(Discord, client, message, searchResult) {
         	const fileEntry = parseInt(message.content)
         	if (0 < fileEntry && fileEntry <= searchResult.length) {
         		picked = true;
-        		cancelListen(reactMenu, choiceCollector, sentEmbed);
-				isgd.shorten(searchResult[fileEntry - 1].links.magnet, function(res) {
+        		cancelListen(reactMenu, choiceCollector);
+
+				return isgd.shorten(searchResult[fileEntry - 1].links.magnet, function(res) {
 			    	return message.channel.send(`Aqui está o link do seu episódio! Divirta-se! :3\n\`\`\`${searchResult[fileEntry -1].name}\`\`\`\n${res}`);
 				});
+			
         	} else {
         		message.channel.send('Não consigo encontrar este episódio... Tem certeza que digitou um número válido?');
         	}
@@ -262,20 +259,16 @@ async function returnSearchResult(Discord, client, message, searchResult) {
         	if(message.content == 'c') {
             	picked = true;
             	message.channel.send('Cancelando a escolha; te vejo mais tarde!');
-            	return cancelListen(reactMenu, choiceCollector, sentEmbed);
+            	return cancelListen(reactMenu, choiceCollector);
             } else if(message.content == '<') {
 		    	if (currentPage - 1 >= 0) {
 		    		currentPage--;
-		    		clearInterval(maxTime);
-		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-		    		changeEmbedPage(sentEmbed)
+					handleChoice()
 	    		}
             } else if(message.content == '>') {
 		    	if (currentPage + 1 < totalPageCount) {
 		    		currentPage++;
-		    		clearInterval(maxTime);
-		    		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-		    		changeEmbedPage(sentEmbed)
+					handleChoice()
 	    		}
             } else {
             	message.channel.send('Ehhhhh?! Pare de me ignorar e escolha um episódio!');
@@ -304,7 +297,13 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 	function cancelListen(reactMenu, choiceCollector) {
 		reactMenu.stop();
 		choiceCollector.stop();
-	}		
+	}
+
+	function handleChoice() {
+		clearInterval(maxTime);
+		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
+		changeEmbedPage(sentEmbed)		
+	}	
 };
 
 async function returnBatchResult(options) {
