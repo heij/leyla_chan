@@ -2,8 +2,8 @@
 const http = require('http');
 const express = require('express');
 const app = express();
-app.get("/", (request, response) => {
-  console.log(Date.now() + " Ping Received");
+app.get('/', (request, response) => {
+  console.log(Date.now() + ' Ping Received');
   response.sendStatus(200);
 });
 app.listen(process.env.PORT);
@@ -17,19 +17,18 @@ require('dotenv').config()
 
 const prefix = process.env.PREFIX;
 const token = process.env.TOKEN;
-const nyaa = require("./functions/search");
-const subscription = require("./functions/subscribe");
-const utils = require("./functions/utils");
+const nyaa = require('./functions/search');
+const subscription = require('./functions/subscribe');
+const utils = require('./functions/utils');
 
-client.on("ready", () => {
+client.on('ready', () => {
   console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
 
-  //setTimeout(subscription.watchSubscriptions.bind(null, Discord, client), 1000);
+  subscription.watchSubscriptions(Discord, client);
   client.user.setActivity(`Serving ${client.guilds.size} servers`);
 });
 
-
-client.on("message", async message => {
+client.on('message', async message => {
   // It's good practice to ignore other bots. This also makes your bot ignore itself
   // and not get into a spam loop (we call that "botception").
   if(message.author.bot) return;
@@ -58,16 +57,18 @@ client.on("message", async message => {
   	case 'list':
   		subscription.list(Discord, client, message, args);
   		break;
-  	case 'help':
-  		utils.help(Discord, client, message, args);
-  		break;
   	case 'current':
-  		subscription.showCurrentlyReleasing(Discord, client, message, args);
+  		subscription.updateAndShowCurrentlyReleasing(Discord, client, message, args);
   		break;
+    case 'help':
+      utils.help(Discord, client, message, args);
+      break;
+    /*case 'refresh':
+      subscription.refreshLink(Discord, client, message, args);
+      break;*/
   	default:
-  		message.channel.send('Eu não conheço esse comando; use \'help para ver que comandos eu conheço.');
+  		message.channel.send(`Eu não conheço esse comando; use ${process.env.PREFIX}help para ver que comandos eu conheço.`);
   }
 });
-
 
 client.login(token);
