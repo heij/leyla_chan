@@ -88,11 +88,11 @@ module.exports.help = function(Discord, client, message, args) {
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
-			    	value: `*__Fansub__*, *__qualidade__*(Caso a fansub trabalhe com mais de uma qualidade diferente) `
+			    	value: `*__Fansub__*, *__qualidade__* (Caso a fansub trabalhe com mais de uma qualidade diferente) `
 			    },
 			    {
 			    	name: '**__Parametros opcionais:__** ',
-			    	value: `*__Episódio inicial__*`			    	
+			    	value: `*__Episódio inicial__* (Usando a opção *__--e__*, você pode me dizer que já assistiu até aquele episódio, e que eu só preciso mandar dali pra frente!)`
 			    }]
 		  	}
 		})		
