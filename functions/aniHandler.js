@@ -17,22 +17,26 @@ function SubscriptionError(message) {
 }
 
 function getOption(query, identifier, type) {
-	const propIndex = query.indexOf(identifier);
-
 	const formatInput = (value, type, query) => {
 		return { value: value, type: type, query: query };
 	};
 
-	if (propIndex > -1) {
-		query.splice(propIndex, 1);
-		return formatInput(query.splice(propIndex, 1)[0], type, query)
-	}
+	try {
+		const propIndex = query.indexOf(identifier);
 
-	return formatInput(undefined, type, query)
+		if (propIndex > -1) {
+			query.splice(propIndex, 1);
+			return formatInput(query.splice(propIndex, 1)[0], type, query)
+		} else return formatInput(undefined, type, query);
+
+	} catch (err) {
+		throw new PropertyError('Hmmmm, parece que houve algum erro quando tentei as opções da sua pesquisa... Tente reportar esse bug para um administrador!')
+	}
 }
 
 function checkFansub(currentProperties, required) {
-	const fansub = getOption(currentProperties.query, '--f', 'fansub');
+	const { query } = currentProperties;
+	const fansub = getOption(query, '--f', 'fansub');
 
 	if (fansub.value === undefined) {
 		if (!required) return fansub;
@@ -43,19 +47,23 @@ function checkFansub(currentProperties, required) {
 }
 
 function checkQuality(currentProperties, required) {
-	const quality = getOption(currentProperties.query, '--q', 'quality');
+	const { fansub, query } = currentProperties;
+	const quality = getOption(query, '--q', 'quality');
+
+	if (Object.keys(fansubs[fansub].qualities).length === 0) return quality;
 
 	if (quality.value === undefined) {
 		if (!required) return quality;
 		else throw new PropertyError('Você precisa especificar uma qualidade para poder usar esse comando!');
 	}
-	if (currentProperties.fansub === undefined) throw new PropertyError('Pra ter certeza de que tudo vai vir certinho, você precisa especificar uma fansub para procurar por qualidade!');
-	if (fansubs[currentProperties.fansub].qualities.hasOwnProperty(quality.value)) return quality;
+	if (fansub === undefined) throw new PropertyError('Pra ter certeza de que tudo vai vir certinho, você precisa especificar uma fansub para procurar por qualidade!');
+	if (fansubs[fansub].qualities.hasOwnProperty(quality.value)) return quality;
 	throw new PropertyError('Hmmm, eu não acho acho que essa seja uma qualidade válida para a fansub que você escolheu... Dê uma olhada nisso e tente novamente!');
 }
 
 function checkLanguage(currentProperties, required) {
-	const language = getOption(currentProperties.query, '--l', 'language');
+	const { query } = currentProperties;
+	const language = getOption(query, '--l', 'language');
 	
   	if (language.value === undefined) {
 		if (!required) return language;
@@ -66,7 +74,8 @@ function checkLanguage(currentProperties, required) {
 }
 
 function checkEpisode(currentProperties, required) {
-	const episode = getOption(currentProperties.query, '--e', 'episode');
+	const { query } = currentProperties;
+	const episode = getOption(query, '--e', 'episode');
 	
 	if (episode.value === undefined) {
 		if (!required) return episode;
@@ -80,7 +89,8 @@ function checkEpisode(currentProperties, required) {
 }
 
 function checkBatchEpisodes(currentProperties, required) {
-	const episodes = getOption(currentProperties.query, '--e', 'episodes');
+	const { query } = currentProperties;
+	const episodes = getOption(query, '--e', 'episodes');
 	
 	if (episodes.value === undefined) {
 		if (!required) return episodes;

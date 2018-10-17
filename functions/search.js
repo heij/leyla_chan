@@ -13,7 +13,7 @@ const {
 
 module.exports.search = async function(Discord, client, message, args) {
 	try {
-		const options = checkAllProperties(args, [
+		const { query, fansub, quality, language, episode } = checkAllProperties(args, [
 			[checkFansub, false],
 			[checkQuality, false], 
 			[checkLanguage, false], 
@@ -21,12 +21,12 @@ module.exports.search = async function(Discord, client, message, args) {
 		]);
 		message.channel.send('Entendido, capitão! Leyla-chan partindo em busca dos seus torrents!');
 
-		const searchResult = await searchByType(options.fansub, options.query, options.quality, options.language, options.episode);
+		const searchResult = await searchByType(fansub, query, quality, language, episode);
 		if (searchResult.length > 0) return await returnSearchResult(Discord, client, message, searchResult);
 		else return message.channel.send('Hmmm, não consegui encontrar nenhum resultado... Tente ser mais específico e tente novamente.');
 	} catch(err) {
 		if (err instanceof PropertyError) return message.channel.send(err.message);
-		console.log(err)
+		console.log(err);
 		return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');
 	}
 }
@@ -54,7 +54,7 @@ module.exports.batch = async function(Discord, client, message, args) {
     } catch(err) {
     	if (err instanceof PropertyError) return message.channel.send(err.message);
     	console.log(err);
-    	return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');	
+    	return message.channel.send('Houve um erro enquanto eu buscava seus torrents! Pode ser o trabalho de alguma organização secreta... Tente novamente quando tiver certeza de que eles não estiverem nos ouvindo...');
     };
 }
 
@@ -100,7 +100,7 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 		const reactMenu = new Discord.ReactionCollector(sentEmbed, (reaction, user) => user.id === message.author.id && (reaction.emoji.name === "◀" || reaction.emoji.name === "▶" || reaction.emoji.name === "❌"));
 	    const choiceCollector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id);
 		let picked = false;
-		var maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
+		const maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
 
 		reactMenu.on("collect", reaction => {
 		    const choice = reaction.emoji.name;
@@ -109,12 +109,12 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 		    if (choice === "◀") {
 		    	if (currentPage - 1 >= 0) {
 		    		currentPage--;
-					handleChoice()
+					handleChoice(maxTime, reactMenu, choiceCollector, sentEmbed, resultEmbed, currentPage);
 	    		}
 		    } else if (choice === "▶") {
 		    	if (currentPage + 1 < totalPageCount) {
 		    		currentPage++;
-					handleChoice()
+					handleChoice(maxTime, reactMenu, choiceCollector, sentEmbed, resultEmbed, currentPage);
 	    		}
 		    } else {
 	        	picked = true;
@@ -145,12 +145,12 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 	            } else if(message.content == '<') {
 			    	if (currentPage - 1 >= 0) {
 			    		currentPage--;
-						handleChoice()
+						handleChoice(maxTime, reactMenu, choiceCollector, sentEmbed, resultEmbed, currentPage);
 		    		}
 	            } else if(message.content == '>') {
 			    	if (currentPage + 1 < totalPageCount) {
 			    		currentPage++;
-						handleChoice()
+						handleChoice(maxTime, reactMenu, choiceCollector, sentEmbed, resultEmbed, currentPage);
 		    		}
 	            } else {
 	            	message.channel.send('Ehhhhh?! Pare de me ignorar e escolha um episódio!');
@@ -168,7 +168,7 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 	}
 
 
-	async function changeEmbedPage(sentEmbed) {
+	async function changeEmbedPage(sentEmbed, resultEmbed, currentPage) {
 		sentEmbed.edit({
 			embed: {
 			    color: 0x731399,
@@ -186,27 +186,28 @@ async function returnSearchResult(Discord, client, message, searchResult) {
 		choiceCollector.stop();
 	}
 
-	function handleChoice() {
+	function handleChoice(maxTime, reactMenu, choiceCollector, sentEmbed, resultEmbed, currentPage) {
 		clearInterval(maxTime);
 		maxTime = setInterval(cancelListen.bind(null, reactMenu, choiceCollector), 60000);
-		changeEmbedPage(sentEmbed)		
+		changeEmbedPage(sentEmbed, resultEmbed, currentPage)		
 	}	
 }
 
 async function returnBatchResult(options) {
+	const { query, fansub, quality, language, episodes } = options;
 	let searchResult = [{
 			name: 'Prontinho, obrigada pela paciência; aqui estão os animes que você pediu! Divirta-se!',
 			value: '\u200b'
 	}];
 
-	if (!isNaN(options.episodes[1])) {
+	if (!isNaN(episodes[1])) {
 		return await (async function fillEpisodeArray(episodeArray, initial, final) {
 			if (initial > final) return episodeArray;
-		  	const res = await searchByType(options.fansub, options.query, options.quality, options.language, padEpisode(initial));
+		  	const res = await searchByType(fansub, query, quality, language, padEpisode(initial));
 
 	  		if (res.length === 0) {
 				episodeArray.push({
-					name: `Não consegui encontrar *__${options.query} ${initial}__* 😖 ! Talvez esse episódio ainda não exista? De qualquer forma, desculpe pelo inconveniente...`,
+					name: `Não consegui encontrar *__${query} ${initial}__* 😖 ! Talvez esse episódio ainda não exista? De qualquer forma, desculpe pelo inconveniente...`,
 					value: '\u200b'
 				});
 	  		} else {
@@ -217,11 +218,11 @@ async function returnBatchResult(options) {
 				});
 			}
 			return fillEpisodeArray(episodeArray, ++initial, final);
-		})(searchResult, options.episodes[0], options.episodes[1]);
+		})(searchResult, episodes[0], episodes[1]);
 
 	} else {
 		return await (async function fillEpisodeArray(episodeArray, initial) {
-		  	const res = await searchByType(options.fansub, options.query, options.quality, options.language, padEpisode(initial));
+		  	const res = await searchByType(fansub, query, quality, language, padEpisode(initial));
 
 	  		if (res.length === 0) {
 				return episodeArray;
@@ -233,6 +234,6 @@ async function returnBatchResult(options) {
 				});
 			}
 			return fillEpisodeArray(episodeArray, ++initial);
-		})(searchResult, options.episodes[0]);
+		})(searchResult, episodes[0]);
 	}
 }

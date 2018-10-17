@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const fansubs = require('../options/fansubs');
 const languages = require('../options/languages');
+const { prefix } = process.env;
 
 module.exports.help = function(Discord, client, message, args) {
 	if (args.includes('params')) {
@@ -23,7 +24,7 @@ module.exports.help = function(Discord, client, message, args) {
 					value: '*__ing__* : Inglês\n*__jap__* : Japonês\n*__ni__* : Outras (Português, Espanhol, Alemão, etc)'
 				},
 				{
-					name: '( Prefixo: --q ) **Qualidades disponíveis:** (Para usar esse parâmetro, você obrigatoriamente deve definir também uma fansub!)',
+					name: '( Prefixo: --q ) **Qualidades disponíveis:** (Para usar esse parâmetro, você obrigatoriamente deve definir também uma fansub! Outra coisa: nem todas as fansubs trabalham com diferentes qualidades, e caso ela não trabalhe esse parâmetro será ignorado!)',
 					value: '*__480__* : 480p\n*__720__* : 720p\n*__1080__* : 1080p'
 				}]
 		  	}
@@ -39,7 +40,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}search *__anime__* --f *__fansub__* --l *__linguagem__* --q *__qualidade__*\n\u200b`
+			    	value: `${prefix}search *__anime__* --f *__fansub__* --l *__linguagem__* --q *__qualidade__*\n\u200b`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
@@ -61,7 +62,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    },				    
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}batch *__anime__* --f *__fansub__* --q *__qualidade__* --e *__episódio incial__*~*__episódio final__*\n\u200b`
+			    	value: `${prefix}batch *__anime__* --f *__fansub__* --q *__qualidade__* --e *__episódio incial__*~*__episódio final__*\n\u200b`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
@@ -83,11 +84,11 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}sub *__anime__* --f *__fansub__* --q *__qualidade__* --e *__episódio inicial__*\n\u200b`
+			    	value: `${prefix}sub *__anime__* --f *__fansub__* --q *__qualidade__* --e *__episódio inicial__*\n\u200b`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
-			    	value: `*__Fansub__*, *__qualidade__*`
+			    	value: `*__Fansub__*, *__qualidade__*(Caso a fansub trabalhe com mais de uma qualidade diferente) `
 			    },
 			    {
 			    	name: '**__Parametros opcionais:__** ',
@@ -105,7 +106,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}current --f *__fansub__*`
+			    	value: `${prefix}current --f *__fansub__*`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
@@ -127,7 +128,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}unsub *__anime__*`
+			    	value: `${prefix}unsub *__anime__*`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
@@ -149,7 +150,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    }, 
 			    {
 			    	name: '**__Usagem:__** ',
-			    	value: `${process.env.PREFIX}list`
+			    	value: `${prefix}list`
 			    },
 			    {
 			    	name: '**__Parametros obrigatórios:__** ',
@@ -171,7 +172,7 @@ module.exports.help = function(Discord, client, message, args) {
 			    color: 0x731399,
 			    fields: [{
 			    	name: '\u200b',
-			    	value: `Certo, então você quer saber como me usar? Pervertido! Hehe, brincadeira 😜. Bom, aqui vão os comandos que eu conheço até agora; use __**${process.env.PREFIX}help comando**__ para saber mais sobre ele! Ah, e lembre-se sempre de usar o prefixo **${process.env.PREFIX}** quando for conversar comigo!\n\u200b`
+			    	value: `Certo, então você quer saber como me usar? Pervertido! Hehe, brincadeira 😜. Bom, aqui vão os comandos que eu conheço até agora; use __**${prefix}help comando**__ para saber mais sobre ele! Ah, e lembre-se sempre de usar o prefixo **${prefix}** quando for conversar comigo!\n\u200b`
 			    },
 			    {
 					name: '__params__',
@@ -209,7 +210,7 @@ module.exports.help = function(Discord, client, message, args) {
 
 function formatFansubs() {
 	return Object.entries(fansubs).reduce((result, options) => {
-		result.value += `*__${options[0]}__* : ${options[1].name}\n`;
+		result.value += `*__${options[0]}__* : ${options[1].name} | Qualidades diferentes? : ${Object.keys(options[1].qualities).length > 0 ? 'Sim' : 'Não'}\n`;
 		return result;
 	}, {
 		name: `( Prefixo: --f ) **Fansubs disponíveis:**`,
