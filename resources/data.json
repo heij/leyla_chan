@@ -1,0 +1,294 @@
+{
+  "data": {
+    "users": {
+      "140892312594022400": {
+        "Zombieland Saga": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02"
+          ]
+        },
+        "SSSS.Gridman": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02"
+          ]
+        },
+        "Akanesasu Shoujo": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02",
+            "03"
+          ]
+        },
+        "JoJo's Bizarre Adventure - Golden Wind": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02"
+          ]
+        },
+        "Release the Spyce": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02"
+          ]
+        },
+        "Tensei Shitara Slime Datta Ken": {
+          "fansub": "horrible",
+          "quality": "720",
+          "episodes": [
+            "01",
+            "02",
+            "03"
+          ]
+        }
+      }
+    },
+    "fansubs": {
+      "horrible": {
+        "Ace Attorney S2": {},
+        "Akanesasu Shoujo": {
+          "02": {
+            "720": "https://is.gd/spcZkE"
+          },
+          "01": {
+            "720": "https://is.gd/YyZz1k"
+          },
+          "03": {
+            "720": "https://is.gd/2usn1X"
+          }
+        },
+        "Anima Yell!": {},
+        "Bakumatsu": {},
+        "Banana Fish": {
+          "10": {
+            "720": "https://is.gd/tJcqra"
+          },
+          "11": {
+            "720": "https://is.gd/mJhcrm"
+          },
+          "12": {
+            "720": "https://is.gd/w28iF9"
+          },
+          "13": {
+            "720": "https://is.gd/pf1wSp"
+          },
+          "14": {
+            "720": "https://is.gd/Ct2XtQ"
+          },
+          "09": {
+            "720": "https://is.gd/dw8Wlh"
+          },
+          "08": {
+            "720": "https://is.gd/qga1xI"
+          },
+          "07": {
+            "720": "https://is.gd/bA89nF"
+          },
+          "06": {
+            "720": "https://is.gd/cGrfK9"
+          },
+          "05": {
+            "720": "https://is.gd/p8EBse"
+          },
+          "04": {
+            "720": "https://is.gd/CzulsL"
+          },
+          "03": {
+            "720": "https://is.gd/CrXJSt"
+          },
+          "02": {
+            "720": "https://is.gd/TAw12g"
+          },
+          "01": {
+            "720": "https://is.gd/2Z0U5O"
+          }
+        },
+        "Beatless": {},
+        "Beelzebub-jou no Okinimesu mama.": {},
+        "Black Clover": {},
+        "Boku no Hero Academia": {},
+        "Bonobono": {},
+        "Boruto - Naruto Next Generations": {},
+        "Cardfight!! Vanguard (2018)": {},
+        "Chi's Sweet Adventure S2": {},
+        "Chuukan Kanriroku Tonegawa": {},
+        "Conception": {},
+        "Dakaretai Otoko 1-i ni Odosarete Imasu.": {},
+        "Detective Conan": {},
+        "Double Decker! Doug and Kirill": {},
+        "Emiya-san Chi no Kyou no Gohan": {},
+        "Fairy Tail Final Season": {},
+        "Frankenstein Family": {},
+        "Gaikotsu Shoten'in Honda-san": {},
+        "Gakuen Basara": {},
+        "Gegege no Kitarou (2018)": {},
+        "Gintama": {},
+        "Goblin Slayer": {},
+        "Golden Kamuy": {},
+        "Grand Blue": {},
+        "Gurazeni": {},
+        "Hanebado!": {},
+        "Happy Sugar Life": {},
+        "Hataraku Saibou": {},
+        "Himote House": {},
+        "Hinomaru Sumo": {},
+        "Irozuku Sekai no Ashita kara": {},
+        "Jashin-chan Dropkick": {},
+        "Jingai-san no Yome": {},
+        "JoJo's Bizarre Adventure - Golden Wind": {
+          "02": {
+            "720": "https://is.gd/JIINI4"
+          },
+          "01": {
+            "720": "https://is.gd/oP5Tui"
+          }
+        },
+        "Karakuri Circus": {},
+        "Kaze ga Tsuyoku Fuiteiru": {},
+        "Ken En Ken - Aoki Kagayaki": {},
+        "Kishuku Gakkou no Juliet": {},
+        "Lord of Vermilion - Guren no Ou": {},
+        "Merc Storia - Mukiryoku Shounen to Bin no Naka no Shoujo": {},
+        "Muhyo to Rouji no Mahouritsu Soudan Jimusho": {},
+        "Nobunaga no Shinobi": {},
+        "One Piece": {},
+        "Ore ga Suki nano wa Imouto dakedo Imouto ja Nai": {},
+        "Overlord III": {},
+        "Persona 5 The Animation": {},
+        "Puzzle and Dragons Cross": {},
+        "RErideD - Tokigoe no Derrida": {},
+        "Radiant": {},
+        "Release the Spyce": {
+          "02": {
+            "720": "https://is.gd/4nCgel"
+          },
+          "01": {
+            "720": "https://is.gd/hlwj71"
+          }
+        },
+        "SSSS.Gridman": {
+          "02": {
+            "720": "https://is.gd/0MrL6m"
+          },
+          "01": {
+            "720": "https://is.gd/dJrPi0"
+          }
+        },
+        "Satsuriku no Tenshi": {},
+        "Seishun Buta Yarou wa Bunny Girl Senpai no Yume wo Minai": {},
+        "Senran Kagura Shinovi Master - Tokyo Youma-hen": {},
+        "Shichisei no Subaru": {},
+        "Shingeki no Kyojin S3": {},
+        "Shoujo Kageki Revue Starlight": {},
+        "Shounen Ashibe Go! Go! Goma-chan": {},
+        "Sora to Umi no Aida": {},
+        "Souten no Ken Re-Genesis": {},
+        "Sword Art Online - Alicization": {},
+        "Tensei Shitara Slime Datta Ken": {
+          "03": {
+            "720": "https://is.gd/tJUQLK"
+          },
+          "02": {
+            "720": "https://is.gd/ARB9Po"
+          },
+          "01": {
+            "720": "https://is.gd/kqm2A6"
+          }
+        },
+        "The iDOLM@STER Side M - Wake Atte Mini!": {},
+        "Thunderbolt Fantasy - The Sword of Life and Death": {},
+        "Thunderbolt Fantasy S2": {},
+        "Toaru Majutsu no Index III": {},
+        "Tokyo Ghoul re": {},
+        "Tonari no Kyuuketsuki-san": {},
+        "Tsukumogami Kashimasu": {},
+        "Uchi no Maid ga Uzasugiru!": {},
+        "Uchuu Senkan Tiramisu S2": {},
+        "Ulysses - Jeanne d'Arc to Renkin no Kishi": {},
+        "Yagate Kimi ni Naru": {},
+        "Yami Shibai - Japanese Ghost Stories 6": {},
+        "Yu-Gi-Oh! VRAINS": {},
+        "Yuragi-sou no Yuuna-san": {},
+        "Zombieland Saga": {
+          "02": {
+            "720": "https://is.gd/x2bLPK"
+          },
+          "01": {
+            "720": "https://is.gd/jDkp4r"
+          }
+        }
+      },
+      "commie": {
+        "Banana Fish": {
+          "10": {
+            "undefined": "https://is.gd/VKclEg"
+          },
+          "11": {
+            "undefined": "https://is.gd/RmObH4"
+          },
+          "12": {
+            "undefined": "https://is.gd/5vLOYP"
+          },
+          "13": {
+            "undefined": "https://is.gd/u0MPCf"
+          },
+          "14": {
+            "undefined": "https://is.gd/pUcGYr"
+          },
+          "09": {
+            "undefined": "https://is.gd/L3L9BL"
+          },
+          "08": {
+            "undefined": "https://is.gd/5yEW0E"
+          },
+          "07": {
+            "undefined": "https://is.gd/LY0qmC"
+          },
+          "06": {
+            "undefined": "https://is.gd/1omWsj"
+          },
+          "05": {
+            "undefined": "https://is.gd/Hg5jY2"
+          },
+          "04": {
+            "undefined": "https://is.gd/hi8E42"
+          },
+          "03": {
+            "undefined": "https://is.gd/dgmNNP"
+          },
+          "02": {
+            "undefined": "https://is.gd/cwOVAq"
+          },
+          "01": {
+            "undefined": "https://is.gd/3Htlja"
+          }
+        },
+        "Gurazeni": {},
+        "Hugtto! Precure": {},
+        "Lupin the Third Part 5": {},
+        "Persona 5 The Animation": {}
+      },
+      "eternal": {
+        "Goblin_Slayer": {},
+        "Happy_Sugar_Life": {},
+        "Happy_Sugar_Life_01-12": {},
+        "Ore_ga_Suki_nano_wa_Imouto_dakedo_Imouto_ja_Nai": {},
+        "Persona_5_the_Animation": {},
+        "Sword_Art_Online_-_Alicization": {},
+        "Tensei_shitara_Slime_Datta_Ken": {},
+        "Toaru_Majutsu_no_Index_III": {}
+      }
+    }
+  }
+}
