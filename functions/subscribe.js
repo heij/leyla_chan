@@ -101,7 +101,7 @@ module.exports.watchSubscriptions = async function watchSubscriptions(Discord, c
 
 async function getCurrentlyReleasing(fansub) {
 	try {
-		let currentlyReleasing = await searchByType(fansub, '');
+		let currentlyReleasing = await searchByType(fansub, ' ');
 		return currentlyReleasing.reduce((result, entry) => {
 			const entryName = fansubFunctions[fansub].splitName(entry.name).anime;
 			return (!result.includes(entryName) && + new Date() - new Date(entry.timestamp * 1000) <= 1728000000)
@@ -116,8 +116,8 @@ async function getCurrentlyReleasing(fansub) {
 function formatCurrentlyReleasing(releaseList, embedMessage) {
 	try {
 		return releaseList.reduce((result, entry, index) => {
-			if (index % 10 === 0) result.push({ name: `\u200b`, value: `*__${entry},__*` })
-		  	else result[result.length-1].value += ` *__${entry}__*,`
+			if (index % 10 === 0) result.push({ name: `\u200b`, value: `\`\`\`${entry}\`\`\`` })
+		  	else result[result.length-1].value += ` \`\`\`${entry}\`\`\``
 		  	return result;
 		},
 		[{
